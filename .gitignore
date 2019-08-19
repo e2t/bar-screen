@@ -31,5 +31,6 @@
 *.out
 *.app
 
-# Geany projects
+# My
 *.geany
+*.7z
