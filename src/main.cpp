@@ -245,8 +245,14 @@ void MyFrame::Run()
 
     WidthStdSize screenWss = ms_screenWssArray[m_screenWssCh->GetSelection()];
     HeightStdSize screenHss = ms_screenHssArray[m_screenHssCh->GetSelection()];
-    HeightStdSize grateHss = ms_grateHssArray[m_grateHssCh->GetSelection()];
     FilterProfile fp = ms_fpArray[m_fpCh->GetSelection()];
+
+    HeightStdSize grateHss = ms_grateHssArray[m_grateHssCh->GetSelection()];
+    if ( screenHss - grateHss < -3 )
+    {
+        SetStatusText(wxT("Слишком высокое полотно."));
+        return;
+    }
 
     Distance channelWidth;
     if ( !GetMmFromTc(channelWidth, m_channelWidthTc) ) return;
