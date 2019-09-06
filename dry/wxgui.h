@@ -1,5 +1,5 @@
-#ifndef WX_H
-#define WX_H
+#ifndef WXGUI_H
+#define WXGUI_H
 
 #pragma GCC system_header
 

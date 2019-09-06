@@ -1,17 +1,10 @@
-CXXFLAGS = -Wall -Wextra -Wshadow $(shell wx-config --cxxflags)
-LDFLAGS = -static $(shell wx-config-static --libs)
-LDLIBS =
+TARGET ?= bar-screen
+OBJS    = main.o barscreen.o
 
-PROG = bar-screen
-OBJS = main.o screen.o
+CPPFLAGS  = $(shell wx-config-static --cxxflags)
+LDLIBS    = $(shell wx-config-static --libs)
 
-all: $(PROG)
+include ../dry/common.mk
 
-run:
-	./$(PROG)
-
-$(PROG): $(OBJS)
+$(TARGET): $(OBJS)
 	$(CXX) $^ -o $@ $(LDFLAGS) $(LDLIBS)
-
-clean:
-	$(RM) $(OBJS) $(PROG)

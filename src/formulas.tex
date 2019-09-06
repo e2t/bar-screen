@@ -1,0 +1,366 @@
+\documentclass[12pt]{article}
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc} % Включаем поддержку UTF8
+\usepackage[russian]{babel}  % Включаем пакет для поддержки русского языка
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{fontspec}
+\setmainfont{Cambria Math}
+\title{Эмпирический расчет массы решёток грабельных больших типоразмеров}
+\date{\today}
+\author{}
+
+% Функции:
+\DeclarePairedDelimiter{\round}{\lfloor}{\rceil}
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+
+% Константы
+\newcommand\maxWssDiff{2}
+\newcommand\anySize{(\dots)}
+\newcommand\otherwise{иначе}
+
+% Входные данные
+\newcommand\screenWss{T\textsubscript{W}}
+\newcommand\screenHss{T\textsubscript{H}}
+\newcommand\grateHss{T\textsubscript{H.пол}}
+\newcommand\channelWidth{W\textsubscript{кан}}
+\newcommand\channelHeight{H\textsubscript{кан}}
+\newcommand\fp{T\textsubscript{фп}}
+\newcommand\gap{Z}
+
+% Расчетные параметры
+\newcommand\channelWss{T\textsubscript{W.кан}}
+\newcommand\standHss{T\textsubscript{H.оп}}
+\newcommand\profilesCount{N\textsubscript{фп}}
+\newcommand\wssDiff{\Delta\textsubscript{W}}
+\newcommand\backwallHss{T\textsubscript{H.ст}}
+\newcommand\coverHss{T\textsubscript{H.обл}}
+\newcommand\standHeight{H\textsubscript{оп}}
+\newcommand\fpWidth{W\textsubscript{фп}}
+\newcommand\innerScreenWidth{W\textsubscript{вн}}
+\newcommand\screenPivotHeight{H\textsubscript{оси}}
+\newcommand\chainLength{L\textsubscript{ц}}
+\newcommand\rakesCount{N\textsubscript{гр}}
+\newcommand\coversCount{N\textsubscript{кр}}
+
+% Массы
+\newcommand\mass{M}
+
+\newcommand\massIa{M\textsubscript{01}}
+\newcommand\massIIa{M\textsubscript{02}}
+\newcommand\massIIIa{M\textsubscript{03}}
+\newcommand\massIVa{M\textsubscript{04}}
+\newcommand\massVa{M\textsubscript{05}}
+\newcommand\massVIa{M\textsubscript{06}}
+\newcommand\massVIIa{M\textsubscript{07}}
+\newcommand\massVIIIa{M\textsubscript{08}}
+\newcommand\massIXa{M\textsubscript{09}}
+\newcommand\massXa{M\textsubscript{10}}
+\newcommand\massXIa{M\textsubscript{11}}
+\newcommand\massXIIa{M\textsubscript{12}}
+\newcommand\massXIIIa{M\textsubscript{13}}
+\newcommand\massXVIIIa{M\textsubscript{18}}
+\newcommand\massXIXa{M\textsubscript{19}}
+\newcommand\massVp{M\textsubscript{00/05}}
+\newcommand\massIXp{M\textsubscript{00/09}}
+\newcommand\massXIIIp{M\textsubscript{00/13}}
+\newcommand\massBigChain{M\textsubscript{ц}}
+\newcommand\massFasteners{M\textsubscript{00/кр}}
+
+\newcommand\massIaIa{M\textsubscript{0101}}
+\newcommand\massIaIIa{M\textsubscript{0102}}
+\newcommand\massIaIIIa{M\textsubscript{0103}}
+\newcommand\massIaIVa{M\textsubscript{0104}}
+\newcommand\massIaIp{M\textsubscript{01/01}}
+\newcommand\massFastenersIa{M\textsubscript{01/кр}}
+
+\newcommand\massIaIaIa{M\textsubscript{010101}}
+\newcommand\massIaIaXIa{M\textsubscript{010111}}
+\newcommand\massIaIaIIa{M\textsubscript{010102}}
+\newcommand\massIaIaIIIa{M\textsubscript{010103}}
+\newcommand\massIaIaIVa{M\textsubscript{010104}}
+\newcommand\massIaIaVa{M\textsubscript{010105}}
+\newcommand\massIaIaVIIa{M\textsubscript{010107}}
+\newcommand\massIaIaVIIIa{M\textsubscript{010108}}
+\newcommand\massIaIaIXa{M\textsubscript{010109}}
+\newcommand\massIaIaIIp{M\textsubscript{0101/02}}
+\newcommand\massFastenersIaIa{M\textsubscript{0101/кр}}
+
+\newcommand\massIaIIIaIa{M\textsubscript{010301}}
+\newcommand\massIaIIIaIp{M\textsubscript{0103/01}}
+\newcommand\massIaIIIaIIp{M\textsubscript{0103/02}}
+
+\begin{document}
+\maketitle
+
+\underline{Входные данные}:\\
+$\screenWss$ --- типоразмер ширины решетки, целое число от 5 до 30.\\
+$\screenHss$ --- типоразмер высоты решетки, целое число от 12 до 144 с шагом 3.\\
+$\grateHss$ --- типоразмер высоты полотна, целое число от 6 до $(\screenHss + 3)$ с шагом 3.\\
+$\channelWidth$ --- ширина канала, м.\\
+$\channelHeight$ --- глубина канала, м.\\
+$\fp$ --- тип фильтровального профиля: 3999, 6х30 или 777.\\
+$\gap$ --- прозор полотна, м.\\
+
+\underline{Расчетные параметры}:\\
+Типоразмер ширины канала, целое число от $\screenWss$ до $(\screenWss + \maxWssDiff)$:
+	\begin{eqnarray}
+	\channelWss = \round{\frac{\channelWidth - 0.1}{0.1}}
+	\end{eqnarray}
+Высота от дна канала до оси поворота решетки, м:
+	\begin{eqnarray}
+	\screenPivotHeight = 0.0985 \times \screenHss + 1.0299
+	\end{eqnarray}
+Высота опоры от поверхности канала до оси поворота решетки, м:
+	\begin{eqnarray}
+	\standHeight = \screenPivotHeight - \channelHeight
+	\end{eqnarray}
+Типоразмер высоты опоры решетки (исполнение в КД), целое число не меньше 7:
+	\begin{eqnarray}
+	\standHss = \round{\frac{\standHeight - 1.0035}{0.3}} \times 3 + 10
+	\end{eqnarray}
+Внутренняя ширина решетки (просвет), м:
+	\begin{eqnarray}
+	\innerScreenWidth = 0.1 \times \screenWss - 0.132
+	\end{eqnarray}
+Ширина одного фильтровального профиля, м:
+	\begin{eqnarray}
+	\fpWidth = \left.\begin{cases}
+        0.006  &\text{при $\fp =$ 6x30}\\
+        0.0078 &\text{при $\fp =$ 777}\\
+        0.0095 &\text{при $\fp =$ 3999} 
+    \end{cases}\right\}
+	\end{eqnarray}
+Количество профилей фильтровального полотна, целое число не меньше 2:
+	\begin{eqnarray}
+	\profilesCount = \ceil{\frac{\innerScreenWidth - \gap}{\fpWidth + \gap}}
+	\end{eqnarray}
+Разность типоразмеров ширины канала и решетки, целое число от 0 до \maxWssDiff:
+	\begin{eqnarray}
+	\wssDiff = \channelWss - \screenWss
+	\end{eqnarray}
+Типоразмер высоты стола (исполнение в КД), целое число не меньше 7:
+	\begin{eqnarray}
+	\backwallHss = \screenHss - \grateHss + 10
+	\end{eqnarray}
+Типоразмер высоты облицовки (исполнение в КД), целое число:
+	\begin{eqnarray}
+	\coverHss = \min{(\backwallHss, \standHss)}
+	\end{eqnarray}
+Длина цепи, м:
+	\begin{eqnarray}
+	\chainLength = \left.\begin{cases}
+        3.528 &\text{при $\screenHss = 6$}\\
+        4.158 &\text{при $\screenHss = 7$}\\
+        4.662 &\text{при $\screenHss = 9$}\\
+        0.2 \times \screenHss + 3.2 &\text{\otherwise}
+    \end{cases}\right\}
+	\end{eqnarray}
+Количество граблин:
+	\begin{eqnarray}
+	\rakesCount = \round{\frac{\chainLength}{0.825}}
+	\end{eqnarray}
+Количество крышек передней облицовки:
+	\begin{eqnarray}
+	\coversCount = \left.\begin{cases}
+        2 &\text{при $\screenWss \leq 10$}\\
+        4 &\text{\otherwise}\\
+    \end{cases}\right\}
+	\end{eqnarray}
+	
+\underline{Масса отдельных узлов}:\\
+Масса узла РКЭ (\dots)-01.01.01.00 СБ Боковина, кг:
+	\begin{eqnarray}
+	\massIaIaIa = 2.7233 \times \screenHss + 46.32
+	\end{eqnarray}
+Масса узла РКЭ \anySize-01.01.11.00 СБ Боковина
+	\begin{eqnarray}
+	\massIaIaXIa = 2.7467 \times \screenHss + 46.03
+	\end{eqnarray}
+Масса узла РКЭ-01.01.02.00.v01 СБ Балка, кг:
+	\begin{eqnarray}
+	\massIaIaIIa = 0.5963 \times \screenWss - 0.3838
+	\end{eqnarray}
+Масса узла РКЭ-01.01.03.00.v01 СБ Балка оси вращения, кг:
+	\begin{eqnarray}
+	\massIaIaIIIa = 0.5881 \times \screenWss + 0.4531
+	\end{eqnarray}
+Масса узла РКЭ-01.01.04.00.v01 СБ Балка верхняя, кг:
+	\begin{eqnarray}
+	\massIaIaIVa = 0.8544 \times \screenWss - 0.1806
+	\end{eqnarray}
+Масса узла РКЭ-01.01.05.00.v01 СБ Балка средняя, кг:
+	\begin{eqnarray}
+	\massIaIaVa = 0.6313 \times \screenWss + 0.1013
+	\end{eqnarray}
+Масса узла РКЭ-01.01.07.00.v02 СБ Шарнир, кг:
+	\begin{eqnarray}
+	\massIaIaVIIa = 0.605 \times \wssDiff + 3.36
+	\end{eqnarray}
+Масса узла РКЭ-01.01.08.00.v01 СБ Балка распорная, кг:
+	\begin{eqnarray}
+	\massIaIaVIIIa = 0.445 \times \screenWss - 0.245
+	\end{eqnarray}
+Масса узла РКЭ-01.01.09.00.v01 СБ Балка под 4 облицовки, кг:
+	\begin{eqnarray}
+	\massIaIaIXa = \left.\begin{cases}
+        0.136 \times \screenWss + 0.13 &\text{при $\screenWss \leq 10$}\\
+        0.1358 \times \screenWss + 0.2758 &\text{\otherwise}\\
+    \end{cases}\right\}
+	\end{eqnarray}
+Масса детали РКЭ-01.01.00.02.v01 Серьга разрезная, кг:
+	\begin{eqnarray}
+	\massIaIaIIp = 0.42
+	\end{eqnarray}
+Масса крепежа узла РКЭ \anySize-01.01.00.00 СБ Рама, кг:
+	\begin{eqnarray}
+	\massFastenersIaIa = 2.22
+	\end{eqnarray}
+Масса узла РКЭ \anySize-01.01.00.00 СБ Рама, кг:
+	\begin{eqnarray}
+	\begin{aligned}
+	\massIaIa =&\ \massIaIaIa + \massIaIaXIa + \massIaIaIIa \times 2 + \massIaIaIIIa + \massIaIaIVa \\ 
+	&+ \massIaIaVa + \massIaIaVIIa \times 2 + \massIaIaVIIIa + \massIaIaIXa \\
+	&+ \massIaIaIIp \times 2 + \massFastenersIaIa 
+	\end{aligned}
+	\end{eqnarray}
+Масса узла РКЭ-01.02.00.00.v01 СБ Лоток, кг:
+	\begin{eqnarray}
+	\massIaIIa = 1.5024 \times \screenWss - 0.1065
+	\end{eqnarray}
+Масса узла РКЭ-01.03.01.00-\anySize.v01 СБ Балка вставного полотна (прозор и тип полотна игнорируются), кг:
+	\begin{eqnarray}
+	\massIaIIIaIa = 0.6919 \times \screenWss - 0.7431
+	\end{eqnarray}
+Масса детали РКЭ-01.03.00.01-\anySize.v01 (профиль), кг:
+	\begin{eqnarray}	
+	\massIaIIIaIp = \left.\begin{cases}
+		0.144 \times \grateHss - 0.158 &\text{при $\fp =$ 6x30}\\
+        0.1887 \times \grateHss - 0.194 &\text{при $\fp =$ 777}\\
+        0.1167 \times \grateHss - 0.13 &\text{при $\fp =$ 3999}\\
+	\end{cases}\right\}	
+	\end{eqnarray}
+Масса детали РКЭ-01.03.00.02.v01 Винт установочный, кг:
+	\begin{eqnarray}
+	\massIaIIIaIIp = 0.16
+	\end{eqnarray}
+Масса узла РКЭ-01.03.00.00-\anySize.v01 СБ Полотно вставное, кг:
+	\begin{eqnarray}
+	\massIaIIIa = \massIaIIIaIa \times 2 + \massIaIIIaIp \times \profilesCount + \massIaIIIaIIp \times 4
+	\end{eqnarray}
+Масса узла РКЭ-01.04.00.00-\anySize.v01 СБ Стол, кг:
+	\begin{eqnarray}
+	\begin{aligned}
+	\massIaIVa =&\ 0.2886 \times \backwallHss \times \screenWss - 0.2754 \times \backwallHss\\
+    &+ 2.2173 \times \screenWss - 2.6036
+	\end{aligned}
+	\end{eqnarray}
+Масса детали РКЭ-01.00.00.01.v01 Лыжа, кг:
+	\begin{eqnarray}
+	\massIaIp = 0.62
+	\end{eqnarray}
+Масса крепежа узла РКЭ \anySize-01.00.00.00 СБ Корпус, кг:
+	\begin{eqnarray}
+	\massFastenersIa = 1.07
+	\end{eqnarray}
+Масса узла РКЭ \anySize-01.00.00.00 СБ Корпус, кг:
+	\begin{eqnarray}
+	\massIa = \massIaIa + \massIaIIa + \massIaIIIa + \massIaIVa + \massIaIp \times 2 + \massFastenersIa
+	\end{eqnarray}
+Масса узла РКЭ-02.00.00.00.v01 СБ Привод, кг:
+	\begin{eqnarray}	
+	\massIIa = \left.\begin{cases}
+		1.85 \times \screenWss + 97.28 &\text{в cтандартном исполнении}\\
+        1.85 \times \screenWss + 99.57 &\text{в тяжелом исполнении}\\
+        &\text{(сейчас не используется)}
+	\end{cases}\right\}	
+	\end{eqnarray}
+Масса узла РКЭ-03.00.00.00.v02 СБ Экран, кг:
+	\begin{eqnarray}
+	\massIIIa = 0.12 \times \wssDiff \times \grateHss + 2.12 \times \wssDiff + 0.4967 \times \grateHss - 1.32
+	\end{eqnarray}
+Масса узла РКЭ-04.00.00.00-\anySize.v01 СБ Граблина (тип полотна и прозор игнорируются), кг:
+	\begin{eqnarray}
+	\massIVa = 0.5524 \times \screenWss + 0.2035
+	\end{eqnarray}
+Масса узла РКЭ-05.00.00.00.v01 СБ Сбрасыватель, кг:
+	\begin{eqnarray}
+	\massVa = 0.8547 \times \screenWss + 1.4571
+	\end{eqnarray}
+Масса узла РКЭ-06.00.00.00.v01 СБ Крышка, кг:
+	\begin{eqnarray}
+	\massVIa = 0.5218 \times \screenWss + 0.6576
+	\end{eqnarray}
+Масса узла РКЭ-07.00.00.00.v01 СБ Ключ торцевой, кг:
+	\begin{eqnarray}
+	\massVIIa = 1.08
+	\end{eqnarray}
+Масса узла РКЭ-08.00.00.00.v01 СБ Подставка на пол, кг:
+	\begin{eqnarray}
+	\massVIIIa = 1.8267 \times \standHss + 8.0633
+	\end{eqnarray}
+Масса узла РКЭ-09.00.00.00.v01 СБ Склиз+кожух выброса, кг:
+	\begin{eqnarray}
+	\massIXa = 1.7871 \times \screenWss - 0.4094
+	\end{eqnarray}
+Масса узла РКЭ-10.00.00.00-10.v01 СБ Облицовка, кг:
+	\begin{eqnarray}	
+	\massXa = \left.\begin{cases}
+		\begin{aligned}(&0.06 \times \coverHss \times \screenWss \\&- 0.055 \times \coverHss \\
+		&+ 0.3167 \times \screenWss + 0.3933)\end{aligned} &\text{при $\screenWss \leq 10$}\\
+        \begin{aligned}(&0.03 \times \coverHss \times \screenWss \\&- 0.0183 \times \coverHss \\
+        &+ 0.1582 \times \screenWss + 0.6052)\end{aligned} &\text{\otherwise}
+	\end{cases}\right\}	
+	\end{eqnarray}
+Масса узла РКЭ-11.00.00.00.v01 СБ Крышка боковая, кг:
+	\begin{eqnarray}
+	\massXIa = 0.42
+	\end{eqnarray}
+Масса узла РКЭ-12.00.00.00.v01 СБ Упор сбрасывателя, кг:
+	\begin{eqnarray}
+	\massXIIa = 0.16
+	\end{eqnarray}
+Масса узла РКЭ-13.00.00.00-\anySize.v01 СБ Рамка с прутка, кг:
+% TODO: Возможно рамку нужно делать по высоте канала, а не полотна.
+	\begin{eqnarray}
+	\massXIIIa = 0.1811 \times \grateHss + 0.49 \times \screenWss + 0.7867
+	\end{eqnarray}
+Масса узла РКЭ-18.00.00.00.v01 СБ Ползун, кг:
+	\begin{eqnarray}
+	\massXVIIIa = 1.13
+	\end{eqnarray}
+Масса узла РКЭ-19.00.00.00.v01 СБ Датчик штыревой, кг:
+	\begin{eqnarray}
+	\massXIXa = 0.0161 \times \grateHss + 0.2067
+	\end{eqnarray}
+Масса детали РКЭ-00.00.00.05.v01 Направляющая привода, кг:
+	\begin{eqnarray}
+	\massVp = 0.87
+	\end{eqnarray}
+Масса детали РКЭ-00.00.00.09.v01 Втулка сбрасывателя, кг:
+	\begin{eqnarray}
+	\massIXp = 0.01
+	\end{eqnarray}
+Масса детали РКЭ-00.00.00.13.v01 Гайка Тр20х4, кг:
+	\begin{eqnarray}
+	\massXIIIp = 0.15
+	\end{eqnarray}
+Масса цепи МС56-Р-100, кг:
+	\begin{eqnarray}
+	\massBigChain = 4.18 \times \chainLength
+	\end{eqnarray}
+Масса крепежа узла РКЭ \anySize-00.00.00.00 СБ Решетка, кг:
+	\begin{eqnarray}
+	\massFasteners = 1.24
+	\end{eqnarray}
+Масса решетки, кг:
+	\begin{eqnarray}
+	\begin{aligned}
+	\mass =&\ \massIa + \massIIa + \massIIIa \times 2 + \massIVa \times \rakesCount + \massVa 
+	+ \massVIa + \massVIIa \\&+ \massVIIIa \times 2 + \massIXa + \massXa \times \coversCount
+	+ \massXIa \times 2 + \massXIIa \times 2 \\&+ \massXIIIa + \massXVIIIa \times 2 + \massXIXa 
+	+ \massVp \times 4 + \massIXp \times 2 \\&+ \massXIIIp \times 2 + \massBigChain \times 2 + \massFasteners
+	\end{aligned}
+	\end{eqnarray}
+	
+\end{document}

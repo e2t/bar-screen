@@ -34,3 +34,8 @@
 # My
 *.geany
 *.7z
+*.gz
+*.pdf
+dry/*
+!dry/*.mk
+!dry/*.h

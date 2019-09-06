@@ -1,6 +1,5 @@
-#include <iostream>
-#include "wx.h"
-#include "screen.h"
+#include "../dry/wxgui.h"
+#include "barscreen.h"
 
 class MyApp : public wxApp
 {
@@ -14,21 +13,21 @@ public:
     MyFrame();
     static void StaticMembersInit();
 private:
-    static WidthStdSize *ms_screenWssArray;
-    static wxArrayString ms_screenWssChoices;
+    static WidthStdSize  *ms_screenWssArray;
+    static wxArrayString  ms_screenWssChoices;
     static HeightStdSize *ms_screenHssArray;
-    static wxArrayString ms_screenHssChoices;
+    static wxArrayString  ms_screenHssChoices;
     static HeightStdSize *ms_grateHssArray;
-    static wxArrayString ms_grateHssChoices;
+    static wxArrayString  ms_grateHssChoices;
     static FilterProfile *ms_fpArray;
-    static wxArrayString ms_fpChoices;
+    static wxArrayString  ms_fpChoices;
 
-    wxChoice *m_screenWssCh;
-    wxChoice *m_screenHssCh;
-    wxChoice *m_grateHssCh;
+    wxChoice   *m_screenWssCh;
+    wxChoice   *m_screenHssCh;
+    wxChoice   *m_grateHssCh;
     wxTextCtrl *m_channelWidthTc;
     wxTextCtrl *m_channelHeightTc;
-    wxChoice *m_fpCh;
+    wxChoice   *m_fpCh;
     wxTextCtrl *m_gapTc;
     wxTextCtrl *m_rkeMassTc;
 
@@ -37,6 +36,7 @@ private:
 
     bool GetMmFromTc(Distance& value, wxTextCtrl *tc);
     void Run();
+    void Print(const wxString& output);
 };
 
 enum
@@ -62,20 +62,20 @@ bool MyApp::OnInit()
     return true;
 }
 
-WidthStdSize *MyFrame::ms_screenWssArray;
-wxArrayString MyFrame::ms_screenWssChoices;
+WidthStdSize  *MyFrame::ms_screenWssArray;
+wxArrayString  MyFrame::ms_screenWssChoices;
 HeightStdSize *MyFrame::ms_screenHssArray;
-wxArrayString MyFrame::ms_screenHssChoices;
+wxArrayString  MyFrame::ms_screenHssChoices;
 HeightStdSize *MyFrame::ms_grateHssArray;
-wxArrayString MyFrame::ms_grateHssChoices;
+wxArrayString  MyFrame::ms_grateHssChoices;
 FilterProfile *MyFrame::ms_fpArray;
-wxArrayString MyFrame::ms_fpChoices;
+wxArrayString  MyFrame::ms_fpChoices;
 
 void MyFrame::StaticMembersInit()
 {
     // Типоразмеры решетки по ширине.
     const WidthStdSize minScreenWss = 5;
-    const WidthStdSize maxScreenWss = 24;
+    const WidthStdSize maxScreenWss = 30;
     const int screenWssCount = maxScreenWss - minScreenWss + 1;
     ms_screenWssArray = new WidthStdSize[screenWssCount];
     for ( int i = 0; i < screenWssCount; i++ )
@@ -88,7 +88,7 @@ void MyFrame::StaticMembersInit()
 
     // Типоразмеры решетки по высоте.
     const HeightStdSize minBigScreenHss = 12;
-    const HeightStdSize maxBigScreenHss = 30;
+    const HeightStdSize maxBigScreenHss = 144;
     const int screenHssCount = (maxBigScreenHss - minBigScreenHss) / 3 + 1;
     ms_screenHssArray = new HeightStdSize[screenHssCount];
     // TODO: Малые типоразмеры еще не добавлены: 06, 07, 09.
@@ -114,7 +114,6 @@ void MyFrame::StaticMembersInit()
     }
 
     // Виды фильтровального профиля.
-    // ВНИМАНИЕ: Эти же записи используются в выводе обозначения.
     ms_fpArray = new FilterProfile[3];
 
     ms_fpArray[0] = fp3999;
@@ -128,7 +127,7 @@ void MyFrame::StaticMembersInit()
 }
 
 MyFrame::MyFrame()
-    : wxFrame(NULL, wxID_ANY, wxT("Расчет грабельной решетки (v0.1.0)"),
+    : wxFrame(NULL, wxID_ANY, wxT("Расчет грабельной решетки (v0.2.0)"),
               wxDefaultPosition, wxDefaultSize,
               wxDEFAULT_FRAME_STYLE & ~(wxRESIZE_BORDER | wxMAXIMIZE_BOX))
 {
@@ -142,10 +141,6 @@ MyFrame::MyFrame()
     m_screenHssCh->Append(ms_screenHssChoices);
     m_screenHssCh->SetSelection(0);
 
-    m_grateHssCh = new wxChoice(panel, ID_GRATE_HSS_CH);
-    m_grateHssCh->Append(ms_grateHssChoices);
-    m_grateHssCh->SetSelection(0);
-
     m_channelWidthTc = new wxTextCtrl(
         panel, ID_CHANNEL_WIDTH_TC, wxEmptyString, wxDefaultPosition,
         wxMinWidth, 0, wxTextValidator(wxFILTER_NUMERIC));
@@ -153,6 +148,10 @@ MyFrame::MyFrame()
     m_channelHeightTc = new wxTextCtrl(
         panel, ID_CHANNEL_HEIGHT_TC, wxEmptyString, wxDefaultPosition,
         wxMinWidth, 0, wxTextValidator(wxFILTER_NUMERIC));
+
+    m_grateHssCh = new wxChoice(panel, ID_GRATE_HSS_CH);
+    m_grateHssCh->Append(ms_grateHssChoices);
+    m_grateHssCh->SetSelection(0);
 
     m_fpCh = new wxChoice(panel, ID_FP_CH);
     m_fpCh->Append(ms_fpChoices);
@@ -162,7 +161,9 @@ MyFrame::MyFrame()
                              wxMinWidth, 0, wxTextValidator(wxFILTER_NUMERIC));
 
     m_rkeMassTc = new wxTextCtrl(panel, ID_RKE_MASS_TC, wxEmptyString,
-                                 wxDefaultPosition, wxMinWidth, wxTE_READONLY);
+                                 wxDefaultPosition,
+                                 ConvertDialogToPixels(wxSize(-1, 100)),
+                                 wxTE_READONLY|wxTE_MULTILINE);
 
     wxButton *runBt = new wxButton(panel, ID_RUN_BT, wxT("Расчет"));
 
@@ -182,9 +183,7 @@ MyFrame::MyFrame()
     bs->Add(new wxStaticText(panel, wxID_ANY, wxT("Высота канала, мм:")),
             wxGBPosition(2, 0), wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
     bs->Add(m_channelHeightTc, wxGBPosition(2, 1), wxGBSpan(1, 2), wxEXPAND);
-    bs->Add(new wxStaticText(panel, wxID_ANY, wxT("Масса решетки, кг:")),
-            wxGBPosition(4, 0), wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
-    bs->Add(m_rkeMassTc, wxGBPosition(4, 1), wxGBSpan(1, 2), wxEXPAND);
+    bs->Add(m_rkeMassTc, wxGBPosition(3, 0), wxGBSpan(1, 5), wxEXPAND);
 
     bs->Add(new wxStaticText(panel, wxID_ANY, wxT("Полотно:")),
             wxGBPosition(0, 3), wxDefaultSpan, wxALIGN_CENTER_VERTICAL);
@@ -197,13 +196,17 @@ MyFrame::MyFrame()
     bs->Add(m_gapTc, wxGBPosition(2, 4), wxDefaultSpan, wxEXPAND);
     bs->Add(runBt, wxGBPosition(4, 4), wxDefaultSpan, wxALIGN_RIGHT);
 
-    CreateStatusBar();
-
     panel->SetSizerAndFit(topBs);
     Fit();
 
     Bind(wxEVT_BUTTON, &MyFrame::OnRunButtonClick, this, ID_RUN_BT);
     Bind(wxEVT_CHAR_HOOK, &MyFrame::OnPressKey, this);
+}
+
+void MyFrame::Print(const wxString& output)
+{
+    m_rkeMassTc->Clear();
+    *m_rkeMassTc << output;
 }
 
 bool MyFrame::GetMmFromTc(Distance& value, wxTextCtrl *tc)
@@ -215,7 +218,7 @@ bool MyFrame::GetMmFromTc(Distance& value, wxTextCtrl *tc)
     }
     else
     {
-        SetStatusText(wxT("Неправильное значение."));
+        Print(wxT("Неправильное значение."));
         tc->SetFocus();
         tc->SelectAll();
     }
@@ -240,57 +243,60 @@ void MyFrame::OnPressKey(wxKeyEvent& event)
 
 void MyFrame::Run()
 {
-    SetStatusText(wxT(""));
-    m_rkeMassTc->Clear();
+    BarScreen::InputData inputData;
 
-    WidthStdSize screenWss = ms_screenWssArray[m_screenWssCh->GetSelection()];
-    HeightStdSize screenHss = ms_screenHssArray[m_screenHssCh->GetSelection()];
-    FilterProfile fp = ms_fpArray[m_fpCh->GetSelection()];
+    inputData.screenWss = ms_screenWssArray[m_screenWssCh->GetSelection()];
+    inputData.screenHss = ms_screenHssArray[m_screenHssCh->GetSelection()];
+    inputData.fp = ms_fpArray[m_fpCh->GetSelection()];
+    inputData.grateHss = ms_grateHssArray[m_grateHssCh->GetSelection()];
 
-    HeightStdSize grateHss = ms_grateHssArray[m_grateHssCh->GetSelection()];
-    if ( screenHss - grateHss < -3 )
+    if ( !GetMmFromTc(inputData.channelWidth, m_channelWidthTc) )
     {
-        SetStatusText(wxT("Слишком высокое полотно."));
         return;
     }
-
-    Distance channelWidth;
-    if ( !GetMmFromTc(channelWidth, m_channelWidthTc) ) return;
-    WidthStdSize channelWss = CalcChannelWss(channelWidth);
-    if ( channelWss - screenWss < 0 )
+    if ( !GetMmFromTc(inputData.channelHeight, m_channelHeightTc) )
     {
-        SetStatusText(wxT("Слишком узкий канал."));
         return;
     }
-    if ( channelWss - screenWss > 2 )
+    if ( !GetMmFromTc(inputData.gap, m_gapTc) )
     {
-        SetStatusText(wxT("Слишком широкий канал."));
         return;
     }
-
-    Distance channelHeight;
-    if ( !GetMmFromTc(channelHeight, m_channelHeightTc) ) return;
-    HeightStdSize standHss = CalcStandHss(screenHss, channelHeight);
-    if ( standHss < 7 )
+    wxString error;
+    wxArrayString order;
+    try
     {
-        SetStatusText(wxT("Слишком глубокий канал."));
-        return;
+        BarScreen bs(inputData, error, order);
+        wxString output;
+        output.Printf(wxT("%s\nМасса - %.0f кг"), bs.GetDesignation(),
+                      bs.GetMass());
+        if ( !bs.IsStandardSize() )
+        {
+            output << wxT(" (примерно)");
+        }
+        output << wxT("\n\nПОРЯДОК ВЫЧИЛЕНИЙ");
+        for ( size_t i = 0; i < order.size(); i++ )
+        {
+            output << wxT("\n") << (i + 1) << wxT(") ") << order[i];
+        }
+#ifdef __WINDOWS__
+        long pos = ::SendMessage(m_rkeMassTc->GetHandle(),
+                                 EM_GETFIRSTVISIBLELINE, 0, 0);
+        Print(output);
+        int newpos = ::SendMessage(m_rkeMassTc->GetHandle(),
+                                   EM_GETFIRSTVISIBLELINE, 0, 0);
+        ::SendMessage(m_rkeMassTc->GetHandle(), EM_LINESCROLL, 0, pos - newpos);
+#else
+        Print(output);
+        m_rkeMassTc->ShowPosition(0);
+#endif
     }
-
-    Distance gap;
-    if ( !GetMmFromTc(gap, m_gapTc) ) return;
-    int profilesCount = CalcProfilesCount(screenWss, fp, gap);
-    if ( profilesCount < 2 )
+    catch (const std::invalid_argument& e)
     {
-        SetStatusText(wxT("Слишком большой прозор."));
-        return;
+        Print(error);
     }
-
-    Mass mass = CalcMass_Rke00Ad(screenWss, screenHss, grateHss, channelWss,
-                                 standHss, fp, profilesCount);
-    *m_rkeMassTc << mass;
-
-    wxString dsg = CreateDesignation(screenWss, screenHss, channelWss, grateHss,
-                                     fp, gap);
-    SetStatusText(dsg);
+    catch (const std::bad_optional_access& e)
+    {
+        Print(wxT("Логическая ошибка в программе."));
+    }
 }
