@@ -1,8 +1,9 @@
 ﻿# Bar-Screen
-Приложение для расчета массы грабельных решеток.
+Приложение для расчета грабельных решеток.
 
 ### Зависимости
-- wxWidgets 3.0.4
+- Python 3.7
+- Tkinter
 
 ### Авторские права
 [![CC0](https://licensebuttons.net/p/zero/1.0/88x31.png)](http://creativecommons.org/publicdomain/zero/1.0/)

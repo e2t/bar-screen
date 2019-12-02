@@ -18,6 +18,7 @@
 \newcommand\maxWssDiff{2}
 \newcommand\anySize{(\dots)}
 \newcommand\otherwise{иначе}
+\newcommand\iif{если}
 
 % Входные данные
 \newcommand\screenWss{T\textsubscript{W}}
@@ -126,9 +127,9 @@ $\gap$ --- прозор полотна, м.\\
 Ширина одного фильтровального профиля, м:
 	\begin{eqnarray}
 	\fpWidth = \left.\begin{cases}
-        0.006  &\text{при $\fp =$ 6x30}\\
-        0.0078 &\text{при $\fp =$ 777}\\
-        0.0095 &\text{при $\fp =$ 3999} 
+        0.006  &\text{\iif\ $\fp =$ 6x30}\\
+        0.0078 &\text{\iif\ $\fp =$ 777}\\
+        0.0095 &\text{\iif\ $\fp =$ 3999} 
     \end{cases}\right\}
 	\end{eqnarray}
 Количество профилей фильтровального полотна, целое число не меньше 2:
@@ -150,9 +151,9 @@ $\gap$ --- прозор полотна, м.\\
 Длина цепи, м:
 	\begin{eqnarray}
 	\chainLength = \left.\begin{cases}
-        3.528 &\text{при $\screenHss = 6$}\\
-        4.158 &\text{при $\screenHss = 7$}\\
-        4.662 &\text{при $\screenHss = 9$}\\
+        3.528 &\text{\iif\ $\screenHss = 6$}\\
+        4.158 &\text{\iif\ $\screenHss = 7$}\\
+        4.662 &\text{\iif\ $\screenHss = 9$}\\
         0.2 \times \screenHss + 3.2 &\text{\otherwise}
     \end{cases}\right\}
 	\end{eqnarray}
@@ -163,7 +164,7 @@ $\gap$ --- прозор полотна, м.\\
 Количество крышек передней облицовки:
 	\begin{eqnarray}
 	\coversCount = \left.\begin{cases}
-        2 &\text{при $\screenWss \leq 10$}\\
+        2 &\text{\iif\ $\screenWss \leq 10$}\\
         4 &\text{\otherwise}\\
     \end{cases}\right\}
 	\end{eqnarray}
@@ -204,7 +205,7 @@ $\gap$ --- прозор полотна, м.\\
 Масса узла РКЭ-01.01.09.00.v01 СБ Балка под 4 облицовки, кг:
 	\begin{eqnarray}
 	\massIaIaIXa = \left.\begin{cases}
-        0.136 \times \screenWss + 0.13 &\text{при $\screenWss \leq 10$}\\
+        0.136 \times \screenWss + 0.13 &\text{\iif\ $\screenWss \leq 10$}\\
         0.1358 \times \screenWss + 0.2758 &\text{\otherwise}\\
     \end{cases}\right\}
 	\end{eqnarray}
@@ -235,9 +236,9 @@ $\gap$ --- прозор полотна, м.\\
 Масса детали РКЭ-01.03.00.01-\anySize.v01 (профиль), кг:
 	\begin{eqnarray}	
 	\massIaIIIaIp = \left.\begin{cases}
-		0.144 \times \grateHss - 0.158 &\text{при $\fp =$ 6x30}\\
-        0.1887 \times \grateHss - 0.194 &\text{при $\fp =$ 777}\\
-        0.1167 \times \grateHss - 0.13 &\text{при $\fp =$ 3999}\\
+		0.144 \times \grateHss - 0.158 &\text{\iif\ $\fp =$ 6x30}\\
+        0.1887 \times \grateHss - 0.194 &\text{\iif\ $\fp =$ 777}\\
+        0.1167 \times \grateHss - 0.13 &\text{\iif\ $\fp =$ 3999}\\
 	\end{cases}\right\}	
 	\end{eqnarray}
 Масса детали РКЭ-01.03.00.02.v01 Винт установочный, кг:
@@ -307,7 +308,7 @@ $\gap$ --- прозор полотна, м.\\
 	\begin{eqnarray}	
 	\massXa = \left.\begin{cases}
 		\begin{aligned}(&0.06 \times \coverHss \times \screenWss \\&- 0.055 \times \coverHss \\
-		&+ 0.3167 \times \screenWss + 0.3933)\end{aligned} &\text{при $\screenWss \leq 10$}\\
+		&+ 0.3167 \times \screenWss + 0.3933)\end{aligned} &\text{\iif\ $\screenWss \leq 10$}\\
         \begin{aligned}(&0.03 \times \coverHss \times \screenWss \\&- 0.0183 \times \coverHss \\
         &+ 0.1582 \times \screenWss + 0.6052)\end{aligned} &\text{\otherwise}
 	\end{cases}\right\}	
