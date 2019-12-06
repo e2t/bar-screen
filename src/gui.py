@@ -1,4 +1,4 @@
-from tkinter import (Tk, W, E, NORMAL, DISABLED, END, Event, HORIZONTAL, N, S,
+from tkinter import (Tk, W, E, N, S, NORMAL, DISABLED, END, Event, HORIZONTAL,
                      DoubleVar)
 from tkinter.ttk import (Frame, Label, Entry, Button, Combobox, Treeview,
                          LabelFrame, Widget, Separator)
@@ -7,6 +7,7 @@ from typing import Optional, List, Type
 from math import radians
 from barscreen import (FILTER_PROFILES, Distance, InputData, InputDataError,
                        BarScreen, VolumeFlowRate, Angle)
+from tooltip import Tooltip
 
 
 def add_pad_to_all_widgets(widget: Type[Widget]) -> None:
@@ -18,11 +19,12 @@ def add_pad_to_all_widgets(widget: Type[Widget]) -> None:
 
 class MainForm(Frame):
     SCREEN_WIDTH_SERIES = range(5, 31)
-    SCREEN_HEIGHT_SERIES = range(12, 145, 3)
+    # Повысил со стандартных xx144, чтобы посчитать Филиппины (канал 15.5 м).
+    SCREEN_HEIGHT_SERIES = range(12, 200, 3)
     GRATE_HEIGHT_SERIES = range(6, 61, 3)
 
     def __init__(self, root: Tk) -> None:
-        root.title('Расчет грабельной решетки (v1.0.0)')
+        root.title('Расчет грабельной решетки (v1.1.0)')
         super().__init__(root)
         cmbw = 4
         subframe = Frame(self)
@@ -70,7 +72,7 @@ class MainForm(Frame):
         Label(subframe, text='мм').grid(row=row, column=2, sticky=W)
 
         row += 1
-        Label(subframe, text='Высота канала:').grid(row=row, column=0,
+        Label(subframe, text='Глубина канала:').grid(row=row, column=0,
                                                     sticky=W)
         self._ent_channel_h = Entry(subframe, width=1)
         self._ent_channel_h.grid(row=row, column=1, sticky=W + E)
@@ -99,11 +101,18 @@ class MainForm(Frame):
         self._ent_final_level.grid(row=row, column=1, sticky=W + E)
         Label(subframe, text='мм').grid(row=row, column=2, sticky=W)
 
+        # Tooltip(self._ent_gap, 'hello12\n3123123')
+        # Tooltip(self._ent_water_flow, 'hello123123')
+        # Tooltip(self._ent_final_level, 'hello')
+
         row += 1
         Label(subframe, text='Угол:').grid(row=row, column=0, sticky=W)
         self._ent_tilt_angle = Entry(subframe, width=1)
         self._ent_tilt_angle.grid(row=row, column=1, sticky=W + E)
         self._ent_tilt_angle.insert(END, 80)
+        Tooltip(self._ent_tilt_angle,
+                'Угол используется только для гидравлического расчета.\n'
+                'Масса решетки рассчитывается для угла 80 градусов.')
         Label(subframe, text='град.').grid(row=row, column=2, sticky=W)
 
         row += 1
@@ -116,10 +125,9 @@ class MainForm(Frame):
         self._change_fp_factor(None)
 
         self._memo = ScrolledText(self, state=DISABLED, height=1)
-        # Else font is monospace by default.
-        # self._memo.configure(font=(self._ent_channel_w['font']))
         self._memo.grid(row=0, column=1, sticky=W + E + N + S)
 
+        # TODO: Привязать к уровню загрязнений (4).
         self._table = Treeview(self, columns=[''] * 6, height=4)
         self._table.heading('#0', text='Загрязнение')
         self._table.column('#0', width=100)
@@ -139,9 +147,7 @@ class MainForm(Frame):
 
         Button(self, text='Расчет', command=self._run).grid(row=2, column=1,
                                                             sticky=E)
-
         add_pad_to_all_widgets(self)
-
         self.bind_all('<Return>', self._on_press_enter)
 
     def _change_fp_factor(self, eventObject) -> None:
@@ -235,16 +241,31 @@ class MainForm(Frame):
         except InputDataError as excp:
             self._output(str(excp))
             return
-        output = f'{bs.designation}\nМасса {bs.mass:.0f} кг'
-        if not bs.is_standard_serie:
-            output += ' (примерно)'
-        output += '\nПривод {}'.format(
-            f'{bs.drive_power / 1e3} кВт' if bs.drive_power
-            else 'нестандартный')
-        output += (f'\nПросвет {bs.inner_screen_width * 1e3:.0f} x '
-                   f'{bs.inner_screen_height * 1e3:.0f} мм')
-        output += f'\nШирина сброса {bs.discharge_width * 1e3:.0f} мм'
-        output += f'\nВысота сброса {bs.discharge_height * 1e3:.0f} мм'
+
+        output = bs.designation
+
+        lines = []
+        lines.append(('Масса', '{:.0f} кг{}'.format(
+            bs.mass, ' (примерно)' if not bs.is_standard_serie else '')))
+        lines.append(('Привод', f'{bs.drive_power / 1e3} кВт' if bs.drive_power
+                      else 'нестандартный'))
+        lines.append(('Просвет', f'{bs.inner_screen_width * 1e3:.0f} x '
+                                 f'{bs.inner_screen_height * 1e3:.0f} мм'))
+        lines.append(('Длина решетки', f'{bs.screen_length * 1e3:.0f} мм'))
+        lines.append(('Длина цепи', f'{bs.chain_length * 1e3:.0f} мм'))
+        lines.append(('Длина профиля', f'{bs.fp_length * 1e3:.0f} мм'))
+        lines.append(('Количество профилей', f'{bs.profiles_count} ± 1 шт.'))
+        lines.append(('Количество граблин', f'{bs.rakes_count} шт.'))
+        lines.append(('Ширина сброса', f'{bs.discharge_width * 1e3:.0f} мм'))
+        lines.append(('Высота сброса',
+                      f'{bs.discharge_height * 1e3:.0f} мм (над каналом), '
+                      f'{bs.discharge_full_height * 1e3:.0f} мм (от дна)'))
+
+        longest_param = max([i[0] for i in lines], key=len)
+        indent = len(longest_param)
+        output += '\n' + '\n'.join(
+            ['%-*s  %s' % (indent, i[0], i[1]) for i in lines])
+
         output += f'\n{"Вставное" if fp.is_removable else "Сварное"} полотно'
         for blinding, hydr in bs.hydraulic.items():
             self._table.insert(

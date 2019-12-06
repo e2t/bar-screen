@@ -41,6 +41,8 @@ FILTER_PROFILES = (
                   lambda grate_hs: Mass(0.144 * grate_hs - 0.158)),
     FilterProfile('777', Distance(0.0078), False, 0.95,
                   lambda grate_hs: Mass(0.1887 * grate_hs - 0.194)),
+    FilterProfile('341', Distance(0.0055), False, 0.95,
+                  lambda grate_hs: Mass(0.0939 * grate_hs - 0.1067)),
     FilterProfile('1492', Distance(0.008), True, 0.95,
                   lambda grate_hs: Mass(0.2481 * grate_hs - 0.4829)))
 
@@ -125,9 +127,39 @@ class BarScreen:
         return self._discharge_height
 
     @property
+    def discharge_full_height(self) -> Distance:
+        """Высота сброса от дна канала."""
+        return self._discharge_full_height
+
+    @property
     def hydraulic(self) -> Dict[float, Hydraulic]:
         """Расчетные гидравлические параметры, зависящие от загрязнения."""
         return self._hydraulic
+
+    @property
+    def rakes_count(self) -> int:
+        """Количество граблин."""
+        return self._rakes_count
+
+    @property
+    def fp_length(self) -> Distance:
+        """Длина профиля."""
+        return self._fp_length
+
+    @property
+    def chain_length(self) -> Distance:
+        """Длина цепи (шаг 100 мм)."""
+        return self._chain_length
+
+    @property
+    def screen_length(self) -> Distance:
+        """Длина решетки (боковины)."""
+        return self._screen_length
+
+    @property
+    def profiles_count(self) -> int:
+        """Количество профилей."""
+        return self._profiles_count
 
     def __init__(self, input_data: InputData, order: List[str]):
         """Конструктор и одновременно расчет решетки."""
@@ -215,6 +247,8 @@ class BarScreen:
         self._is_standard_serie = self._check_standard_serie()
         self._drive_power = self._calc_drive_power()
 
+        self._screen_length = self._calc_screen_length()
+        self._fp_length = self._calc_fp_length()
         self._discharge_width = self._calc_discharge_width()
         self._discharge_full_height = self._calc_discharge_full_height()
         self._discharge_height = self._calc_discharge_height()
@@ -224,6 +258,14 @@ class BarScreen:
         self._c = self._calc_c_hydraulic()
         self._efficiency = self._calc_efficiency()
         self._hydraulic = self._calc_hydraulic()
+
+    def _calc_screen_length(self) -> Distance:
+        return Distance((100 * self._input_data.screen_hs + 1765) / 1e3)
+
+    def _calc_fp_length(self) -> Distance:
+        if self._input_data.fp.is_removable:
+            return Distance((100 * self._input_data.grate_hs - 175) / 1e3)
+        return Distance((100 * self._input_data.grate_hs - 106) / 1e3)
 
     def _calc_discharge_height(self) -> Distance:
         return Distance(self._discharge_full_height
@@ -445,6 +487,7 @@ class BarScreen:
                            f'{result:.3f} м')
         return result
 
+    # Примерное (теоретическое) количество, конструктор может менять шаг.
     def _calc_profiles_count(self) -> int:
         result = ceil((self._inner_screen_width - self._input_data.gap)
                       / (self._input_data.fp.width + self._input_data.gap))
