@@ -1,27 +1,17 @@
 """Расчет параметров грабельной решетки больших типоразмеров."""
-from typing import NamedTuple, NewType, List, Optional, Callable, Dict
+import sys
+from typing import NamedTuple, List, Optional, Callable, Dict, Tuple
 from math import ceil, radians, sin
-
-WidthSerie = NewType('WidthSerie', int)            # Типоразмер по ширине.
-HeightSerie = NewType('HeightSerie', int)          # Типоразмер по высоте.
-Mass = NewType('Mass', float)                      # Масса, кг.
-Distance = NewType('Distance', float)              # Расстояние, м.
-Power = NewType('Power', float)                    # Мощность, Вт.
-VolumeFlowRate = NewType('VolumeFlowRate', float)  # Объемный расход, м3/с.
-Angle = NewType('Angle', float)                    # Угол, радианы.
-Velocity = NewType('Velocity', float)              # Векторная скорость, м/с.
-Area = NewType('Area', float)                      # Площадь, м2.
-Acceleration = NewType('Acceleration', float)      # Ускорение, м/с2.
+sys.path.append(f'{sys.path[0]}/..')
+from dry.allcalc import (
+    WidthSerie, HeightSerie, Mass, Distance, Power, VolumeFlowRate, Angle,
+    Velocity, Area, GRAV_ACC, InputDataError)
 
 
-GRAV_ACC = Acceleration(9.80665)
+SCREEN_WIDTH_SERIES = range(5, 31)
+SCREEN_HEIGHT_SERIES = range(12, 200, 3)
+GRATE_HEIGHT_SERIES = range(6, 61, 3)
 
-
-# Толщина профиля : коэф-т формы (таблица Кирьяновой)
-# 5.5 : 0.95
-# 8   : 0.95
-# 9.5 : 1.5
-# 6   : 2.42
 
 class FilterProfile(NamedTuple):
     """Профиль фильтровального полотна."""
@@ -33,12 +23,20 @@ class FilterProfile(NamedTuple):
     # Вычиление массы исходя из типоразмера полотна
     calc_mass: Callable[[HeightSerie], Mass]
 
+# Толщина профиля : коэф-т формы (таблица Кирьяновой)
+# 5.5 : 0.95
+# 8   : 0.95
+# 9.5 : 1.5
+# 6   : 2.42
+
 
 FILTER_PROFILES = (
     FilterProfile('3999', Distance(0.0095), False, 1.5,
                   lambda grate_hs: Mass(0.1167 * grate_hs - 0.13)),
     FilterProfile('6x30', Distance(0.006), False, 2.42,
                   lambda grate_hs: Mass(0.144 * grate_hs - 0.158)),
+    FilterProfile('6x60', Distance(0.006), True, 2.42,
+                  lambda grate_hs: Mass(0.2881 * grate_hs - 0.5529)),
     FilterProfile('777', Distance(0.0078), False, 0.95,
                   lambda grate_hs: Mass(0.1887 * grate_hs - 0.194)),
     FilterProfile('341', Distance(0.0055), False, 0.95,
@@ -50,13 +48,14 @@ FILTER_PROFILES = (
 class InputData(NamedTuple):
     """Структура входных данных для расчета решетки."""
 
-    screen_ws: WidthSerie     # Типоразмер решетки по ширине.
-    screen_hs: HeightSerie    # Типоразмер решетки по высоте.
-    grate_hs: HeightSerie     # Типоразмер полотна по высоте.
-    channel_width: Distance   # Ширина канала, м.
-    channel_height: Distance  # Глубина канала, м.
-    fp: FilterProfile         # Тип фильтровального профиля.
-    gap: Distance             # Прозор полотна, м.
+    screen_ws: Optional[WidthSerie]     # Типоразмер решетки по ширине.
+    screen_hs: Optional[HeightSerie]    # Типоразмер решетки по высоте.
+    grate_hs: Optional[HeightSerie]     # Типоразмер полотна по высоте.
+    channel_width: Distance             # Ширина канала, м.
+    channel_height: Distance            # Глубина канала, м.
+    min_discharge_height: Distance      # Минимальная высота сброса, м.
+    fp: FilterProfile                   # Тип фильтровального профиля.
+    gap: Distance                       # Прозор полотна, м.
     # Гидравлические параметры:
     water_flow: Optional[VolumeFlowRate] = None  # Расход воды, м3/с.
     final_level: Optional[Distance] = None       # Уровень после решетки, м.
@@ -72,10 +71,6 @@ class Hydraulic(NamedTuple):
     level_diff: Optional[Distance]
     start_level: Optional[Distance]
     upstream_flow_velocity: Optional[Velocity]
-
-
-class InputDataError(Exception):
-    """Класс исключений, связанный с неправильными входными данными."""
 
 
 class BarScreen:
@@ -163,28 +158,55 @@ class BarScreen:
 
     def __init__(self, input_data: InputData, order: List[str]):
         """Конструктор и одновременно расчет решетки."""
-        self._input_data = input_data
         self._order = order
         self._order.clear()
-        self._is_heavy_version = True  # FIX: сделать расчет от высоты решетки
-        if (self._input_data.screen_hs - self._input_data.grate_hs) < -6:
-            raise InputDataError('Слишком высокое полотно.')
+
+        self._input_data = input_data
+        self._screen_ws: WidthSerie = self._input_data.screen_ws or \
+            self._calc_screen_ws()
+        self._screen_hs: HeightSerie = self._input_data.screen_hs or \
+            self._calc_screen_hs()
+
+        self._discharge_full_height = self._calc_discharge_full_height(
+            self._screen_hs)
+        self._discharge_height = self._calc_discharge_height()
+        if self._discharge_height < self._input_data.min_discharge_height:
+            raise InputDataError('Высота сброса меньше указанной минимальной '
+                                 'высоты.')
+
+        self._inner_screen_width = self._calc_inner_screen_width()
+        # Гидравлический расчет:
+        self._b = self._calc_b_hydraulic()
+        self._c = self._calc_c_hydraulic()
+        self._efficiency = self._calc_efficiency()
+        self._hydraulic = self._calc_hydraulic()
+
+        self._grate_hs: HeightSerie = self._input_data.grate_hs or \
+            self._calc_grate_hs()
+
+        # TODO: Усиленный привод - сделать расчет от высоты решетки.
+        self._is_heavy_version = True
+
+        max_diff_screen_and_grate_hs = 9
+        if (self._screen_hs - self._grate_hs) < -max_diff_screen_and_grate_hs:
+            raise InputDataError('Полотно больше решетки более чем на {:d} '
+                                 'типоразмеров.'.format(
+                                     max_diff_screen_and_grate_hs))
         self._channel_ws = self._calc_channel_ws()
-        if (self._channel_ws - self._input_data.screen_ws) < 0:
+        if (self._channel_ws - self._screen_ws) < 0:
             raise InputDataError('Слишком узкий канал.')
-        if (self._channel_ws - self._input_data.screen_ws) > 2:
+        if (self._channel_ws - self._screen_ws) > 2:
             raise InputDataError('Слишком широкий канал.')
         self._screen_pivot_height = self._calc_screen_pivot_height()
         self._stand_height = self._calc_stand_height()
         self._stand_hs = self._calc_stand_hs()
-        if self._stand_hs < 7:
-            raise InputDataError('Слишком глубокий канал.')
-        self._inner_screen_width = self._calc_inner_screen_width()
+
         self._profiles_count = self._calc_profiles_count()
         if self._profiles_count < 2:
             raise InputDataError('Слишком большой прозор.')
 
-        self._inner_screen_height = self._calc_inner_screen_height()
+        self._inner_screen_height = self._calc_inner_screen_height(
+            self._grate_hs)
 
         if self._input_data.final_level is not None:
             if self._input_data.final_level >= self._input_data.channel_height:
@@ -250,29 +272,63 @@ class BarScreen:
         self._screen_length = self._calc_screen_length()
         self._fp_length = self._calc_fp_length()
         self._discharge_width = self._calc_discharge_width()
-        self._discharge_full_height = self._calc_discharge_full_height()
-        self._discharge_height = self._calc_discharge_height()
 
-        # Гидравлический расчет:
-        self._b = self._calc_b_hydraulic()
-        self._c = self._calc_c_hydraulic()
-        self._efficiency = self._calc_efficiency()
-        self._hydraulic = self._calc_hydraulic()
+    # На 100 мм меньше, затем в меньшую сторону.
+    def _calc_screen_ws(self) -> WidthSerie:
+        return WidthSerie(int(round(self._input_data.channel_width - 0.1, 3)
+                              * 10))
+
+    # TODO: Высота решетки - сделать подбор неограниченным.
+    def _calc_screen_hs(self) -> HeightSerie:
+        min_full_discharge_height = self._input_data.channel_height \
+            + self._input_data.min_discharge_height
+        for i in SCREEN_HEIGHT_SERIES:
+            if self._calc_discharge_full_height(HeightSerie(i)) \
+                    >= min_full_discharge_height:
+                return HeightSerie(i)
+        raise InputDataError('Не удается подобрать высоту решетки из '
+                             'стандартного ряда.')
+
+    def _calc_grate_hs(self) -> HeightSerie:
+
+        def calc_by(some_level: Optional[Distance]) -> Tuple[Distance, bool]:
+            if (some_level is not None) and (
+                    some_level < self._input_data.channel_height):
+                return some_level, False
+            return self._input_data.channel_height, True
+
+        start_levels = [i.start_level for i in self._hydraulic.values()
+                        if i.start_level is not None]
+        if start_levels:
+            min_grate_height, can_be_equal = calc_by(max(start_levels))
+        elif self._input_data.final_level is not None:
+            min_grate_height, can_be_equal = calc_by(
+                self._input_data.final_level)
+        else:
+            min_grate_height, can_be_equal = calc_by(None)
+        for i in GRATE_HEIGHT_SERIES:
+            grate_height = self._calc_inner_screen_height(HeightSerie(i))
+            if grate_height > min_grate_height or (
+                    can_be_equal and grate_height == min_grate_height):
+                return HeightSerie(i)
+        raise InputDataError('Не удается подобрать высоту полотна из '
+                             'стандартного ряда.')
 
     def _calc_screen_length(self) -> Distance:
-        return Distance((100 * self._input_data.screen_hs + 1765) / 1e3)
+        return Distance((100 * self._screen_hs + 1765) / 1e3)
 
     def _calc_fp_length(self) -> Distance:
         if self._input_data.fp.is_removable:
-            return Distance((100 * self._input_data.grate_hs - 175) / 1e3)
-        return Distance((100 * self._input_data.grate_hs - 106) / 1e3)
+            return Distance((100 * self._grate_hs - 175) / 1e3)
+        return Distance((100 * self._grate_hs - 106) / 1e3)
 
     def _calc_discharge_height(self) -> Distance:
         return Distance(self._discharge_full_height
                         - self._input_data.channel_height)
 
-    def _calc_discharge_full_height(self) -> Distance:
-        return Distance((98.4667 * self._input_data.screen_hs + 961.4) / 1e3)
+    @staticmethod
+    def _calc_discharge_full_height(screen_hs: HeightSerie) -> Distance:
+        return Distance((98.4667 * screen_hs + 961.4) / 1e3)
 
     def _calc_b_hydraulic(self) -> Optional[Distance]:
         if self._input_data.final_level is not None:
@@ -344,84 +400,91 @@ class BarScreen:
         return None
 
     def _calc_relative_flow_area(self, blinding: float) -> float:
-        return ((self._input_data.gap / (self._input_data.gap
-                                         + self._input_data.fp.width))
-                - (blinding * self._input_data.gap / (self._input_data.fp.width
-                                                      + self._input_data.gap)))
+        result: float = self._input_data.gap / (self._input_data.gap
+                                                + self._input_data.fp.width) \
+            - blinding * self._input_data.gap / (self._input_data.fp.width
+                                                 + self._input_data.gap)
+        return result
 
     # В расчете не были указаны единицы измерения (будто это коэффициент),
     # но по всему видно, что это должна быть длина.
     def _calc_blinding_factor(self, relative_flow_area: float) -> float:
-        return (self._input_data.gap - relative_flow_area
-                * (self._input_data.gap + self._input_data.fp.width))
+        result: float = self._input_data.gap - relative_flow_area \
+            * (self._input_data.gap + self._input_data.fp.width)
+        return result
 
     # Неизвестны единицы измерения и вообще суть параметра.
     def _calc_d_hydraulic(self, blinding: float,
                           blinding_factor: float) -> Optional[float]:
         if self._input_data.water_flow is not None and \
                 self._input_data.tilt_angle is not None:
-            return ((((self._input_data.water_flow / self._inner_screen_width
-                       / (self._efficiency * (1 - blinding)))**2)
-                     / (2 * GRAV_ACC)) * sin(self._input_data.tilt_angle)
-                    * self._input_data.fp.shape_factor
-                    * (((self._input_data.fp.width + blinding_factor)
-                        / (self._input_data.gap - blinding_factor))**(4 / 3)))
+            result: float = (
+                (((self._input_data.water_flow / self._inner_screen_width
+                   / (self._efficiency * (1 - blinding)))**2)
+                 / (2 * GRAV_ACC)) * sin(self._input_data.tilt_angle)
+                * self._input_data.fp.shape_factor
+                * (((self._input_data.fp.width + blinding_factor)
+                    / (self._input_data.gap - blinding_factor))**(4 / 3)))
+            return result
         return None
 
     # Эффективная поверхность решетки.
     def _calc_efficiency(self) -> float:
-        return self._input_data.gap / (self._input_data.gap
-                                       + self._input_data.fp.width)
+        result: float = self._input_data.gap / (self._input_data.gap
+                                                + self._input_data.fp.width)
+        return result
 
     # Ширина сброса.
     def _calc_discharge_width(self) -> Distance:
-        return Distance((100 * self._input_data.screen_ws - 129) / 1e3)
+        return Distance((100 * self._screen_ws - 129) / 1e3)
 
     # Высота просвета решетки.
     # ВНИМАНИЕ: Не учитывается высота лотка.
-    def _calc_inner_screen_height(self) -> Distance:
-        return Distance((98.481 * self._input_data.grate_hs - 173.215) / 1e3)
+    @staticmethod
+    def _calc_inner_screen_height(grate_hs: HeightSerie) -> Distance:
+        return Distance(round((98.481 * grate_hs - 173.215) / 1e3, 3))
 
     # Подбор мощности привода.
     def _calc_drive_power(self) -> Optional[Power]:
-        if self._input_data.screen_ws <= self.MAX_SMALL_SCREEN_WS and \
-                self._input_data.screen_hs <= self.MAX_SMALL_SCREEN_HS:
+        if self._screen_ws <= self.MAX_SMALL_SCREEN_WS and \
+                self._screen_hs <= self.MAX_SMALL_SCREEN_HS:
             return Power(370)
-        if self._input_data.screen_ws <= self.MAX_BIG_SCREEN_WS:
-            if self._input_data.screen_hs <= self.MAX_BIG_SCREEN_HS:
+        if self._screen_ws <= self.MAX_BIG_SCREEN_WS:
+            if self._screen_hs <= self.MAX_BIG_SCREEN_HS:
                 return Power(750)
-            if int(self._input_data.screen_ws) + \
-                    int(self._input_data.screen_hs) < 54:
+            if int(self._screen_ws) + \
+                    int(self._screen_hs) < 54:
                 return Power(1100)
         return None
 
     # Проверка, входит ли решетка в стандартный типоряд.
     def _check_standard_serie(self) -> bool:
-        return (self._input_data.screen_ws <= self.MAX_BIG_SCREEN_WS) and \
-            (self._input_data.screen_hs <= self.MAX_BIG_SCREEN_HS)
+        result: bool = (self._screen_ws <= self.MAX_BIG_SCREEN_WS) and \
+                       (self._screen_hs <= self.MAX_BIG_SCREEN_HS)
+        return result
 
     # Обозначение решетки.
     def _create_designation(self) -> str:
-        dsg = [f'РКЭ {self._input_data.screen_ws:02d}'
-               f'{self._input_data.screen_hs:02d}']
-        if (self._channel_ws != self._input_data.screen_ws) or \
-                (self._input_data.grate_hs != self._input_data.screen_hs):
+        dsg = [f'РКЭ {self._screen_ws:02d}'
+               f'{self._screen_hs:02d}']
+        if (self._channel_ws != self._screen_ws) or \
+                (self._grate_hs != self._screen_hs):
             dsg.append('(')
-            if self._channel_ws == self._input_data.screen_ws:
+            if self._channel_ws == self._screen_ws:
                 dsg.append('00')
             else:
                 dsg.append(f'{self._channel_ws:02d}')
-            if self._input_data.grate_hs == self._input_data.screen_hs:
+            if self._grate_hs == self._screen_hs:
                 dsg.append('00')
             else:
-                dsg.append(f'{self._input_data.grate_hs:02d}')
+                dsg.append(f'{self._grate_hs:02d}')
             dsg.append(')')
         dsg.append(f'.{self._input_data.fp.name}.'
                    f'{self._input_data.gap * 1000:g}')
         return ''.join(dsg)
 
     def _calc_ws_diff(self) -> WidthSerie:
-        result = WidthSerie(self._channel_ws - self._input_data.screen_ws)
+        result = WidthSerie(self._channel_ws - self._screen_ws)
         self._order.append(
             f'Разность типоразмеров ширины канала и решетки: {result}')
         return result
@@ -465,24 +528,24 @@ class BarScreen:
 
     def _calc_backwall_hs(self) -> HeightSerie:
         result = HeightSerie(
-            self._input_data.screen_hs - self._input_data.grate_hs + 10)
+            self._screen_hs - self._grate_hs + 10)
         self._order.append(f'Типоразмер высоты стола: {result}')
         return result
 
     def _calc_mass_rke0102ad(self) -> Mass:
-        result = Mass(1.5024 * self._input_data.screen_ws - 0.1065)
+        result = Mass(1.5024 * self._screen_ws - 0.1065)
         self._order.append('Масса узла РКЭ-01.02.00.00.v01 СБ Лоток: '
                            f'{result:.1f} кг')
         return result
 
     def _calc_mass_rke010301ad(self) -> Mass:
-        result = Mass(0.6919 * self._input_data.screen_ws - 0.7431)
+        result = Mass(0.6919 * self._screen_ws - 0.7431)
         self._order.append('Масса узла РКЭ-01.03.01.00-(...).v01 СБ Балка '
                            f'вставного полотна: {result:.1f} кг')
         return result
 
     def _calc_inner_screen_width(self) -> Distance:
-        result = Distance(0.1 * self._input_data.screen_ws - 0.132)
+        result = Distance(0.1 * self._screen_ws - 0.132)
         self._order.append('Внутренняя ширина решетки (просвет): '
                            f'{result:.3f} м')
         return result
@@ -496,7 +559,7 @@ class BarScreen:
         return result
 
     def _calc_mass_rke0103ad01(self) -> Mass:
-        result = self._input_data.fp.calc_mass(self._input_data.grate_hs)
+        result = self._input_data.fp.calc_mass(self._grate_hs)
         self._order.append('Масса детали РКЭ-01.03.00.01-(...).v01 (профиль):'
                            f' {result:.1f} кг')
         return result
@@ -516,9 +579,9 @@ class BarScreen:
         return result
 
     def _calc_mass_rke0104ad(self) -> Mass:
-        result = Mass(0.2886 * self._backwall_hs * self._input_data.screen_ws
+        result = Mass(0.2886 * self._backwall_hs * self._screen_ws
                       - 0.2754 * self._backwall_hs
-                      + 2.2173 * self._input_data.screen_ws - 2.6036)
+                      + 2.2173 * self._screen_ws - 2.6036)
         self._order.append('Масса узла РКЭ-01.04.00.00-(...).v01 СБ Стол: '
                            f'{result:.1f} кг')
         return result
@@ -536,37 +599,37 @@ class BarScreen:
         return result
 
     def _calc_mass_rke010101ad(self) -> Mass:
-        result = Mass(2.7233 * self._input_data.screen_hs + 46.32)
+        result = Mass(2.7233 * self._screen_hs + 46.32)
         self._order.append('Масса узла (...)-01.01.01.00 СБ Боковина: '
                            f'{result:.1f} кг')
         return result
 
     def _calc_mass_rke010111ad(self) -> Mass:
-        result = Mass(2.7467 * self._input_data.screen_hs + 46.03)
+        result = Mass(2.7467 * self._screen_hs + 46.03)
         self._order.append('Масса узла (...)-01.01.11.00 СБ Боковина: '
                            f'{result:.1f} кг')
         return result
 
     def _calc_mass_rke010102ad(self) -> Mass:
-        result = Mass(0.5963 * self._input_data.screen_ws - 0.3838)
+        result = Mass(0.5963 * self._screen_ws - 0.3838)
         self._order.append('Масса узла РКЭ-01.01.02.00.v01 СБ Балка: '
                            f'{result:.1f} кг')
         return result
 
     def _calc_mass_rke010103ad(self) -> Mass:
-        result = Mass(0.5881 * self._input_data.screen_ws + 0.4531)
+        result = Mass(0.5881 * self._screen_ws + 0.4531)
         self._order.append('Масса узла РКЭ-01.01.03.00.v01 СБ Балка оси '
                            f'вращения: {result:.1f} кг')
         return result
 
     def _calc_mass_rke010104ad(self) -> Mass:
-        result = Mass(0.8544 * self._input_data.screen_ws - 0.1806)
+        result = Mass(0.8544 * self._screen_ws - 0.1806)
         self._order.append('Масса узла РКЭ-01.01.04.00.v01 СБ Балка верхняя: '
                            f'{result:.1f} кг')
         return result
 
     def _calc_mass_rke010105ad(self) -> Mass:
-        result = Mass(0.6313 * self._input_data.screen_ws + 0.1013)
+        result = Mass(0.6313 * self._screen_ws + 0.1013)
         self._order.append('Масса узла РКЭ-01.01.05.00.v01 СБ Балка средняя: '
                            f'{result:.1f} кг')
         return result
@@ -578,16 +641,16 @@ class BarScreen:
         return result
 
     def _calc_mass_rke010108ad(self) -> Mass:
-        result = Mass(0.445 * self._input_data.screen_ws - 0.245)
+        result = Mass(0.445 * self._screen_ws - 0.245)
         self._order.append('Масса узла РКЭ-01.01.08.00.v01 СБ Балка '
                            f'распорная: {result:.1f} кг')
         return result
 
     def _calc_mass_rke010109ad(self) -> Mass:
-        if self._input_data.screen_ws <= 10:
-            result = Mass(0.136 * self._input_data.screen_ws + 0.13)
+        if self._screen_ws <= 10:
+            result = Mass(0.136 * self._screen_ws + 0.13)
         else:
-            result = Mass(0.1358 * self._input_data.screen_ws + 0.2758)
+            result = Mass(0.1358 * self._screen_ws + 0.2758)
         self._order.append('Масса узла РКЭ-01.01.09.00.v01 СБ Балка под 4 '
                            f'облицовки: {result:.1f} кг')
         return result
@@ -632,7 +695,7 @@ class BarScreen:
         return result
 
     def _calc_mass_rke02ad(self) -> Mass:
-        result = Mass(1.85 * self._input_data.screen_ws + 97.28)
+        result = Mass(1.85 * self._screen_ws + 97.28)
         if self._is_heavy_version:
             result = Mass(result + 2.29)
         self._order.append('Масса узла РКЭ-02.00.00.00.v01 СБ Привод: '
@@ -641,8 +704,8 @@ class BarScreen:
 
     def _calc_mass_rke03ad(self) -> Mass:
         result = Mass(
-            0.12 * self._ws_diff * self._input_data.grate_hs
-            + 2.12 * self._ws_diff + 0.4967 * self._input_data.grate_hs
+            0.12 * self._ws_diff * self._grate_hs
+            + 2.12 * self._ws_diff + 0.4967 * self._grate_hs
             - 1.32)
         self._order.append('Масса узла РКЭ-03.00.00.00.v02 СБ Экран: '
                            f'{result:.1f} кг')
@@ -650,7 +713,7 @@ class BarScreen:
 
     # Тип полотна и прозор игнорируются.
     def _calc_mass_rke04ad(self) -> Mass:
-        result = Mass(0.5524 * self._input_data.screen_ws + 0.2035)
+        result = Mass(0.5524 * self._screen_ws + 0.2035)
         self._order.append('Масса узла РКЭ-04.00.00.00-(...).v01 СБ Граблина: '
                            f'{result:.1f} кг')
         return result
@@ -659,10 +722,10 @@ class BarScreen:
         small_chain_lengths = {6: Distance(3.528),
                                7: Distance(4.158),
                                9: Distance(4.662)}
-        if self._input_data.screen_hs < 12:
-            result = small_chain_lengths[self._input_data.screen_hs]
+        if self._screen_hs < 12:
+            result = small_chain_lengths[self._screen_hs]
         else:
-            result = Distance(0.2 * self._input_data.screen_hs + 3.2)
+            result = Distance(0.2 * self._screen_hs + 3.2)
         self._order.append(f'Длина цепи: {result:.3f} м')
         return result
 
@@ -672,13 +735,13 @@ class BarScreen:
         return result
 
     def _calc_mass_rke05ad(self) -> Mass:
-        result = Mass(0.8547 * self._input_data.screen_ws + 1.4571)
+        result = Mass(0.8547 * self._screen_ws + 1.4571)
         self._order.append('Масса узла РКЭ-05.00.00.00.v01 СБ Сбрасыватель: '
                            f'{result:.1f} кг')
         return result
 
     def _calc_mass_rke06ad(self) -> Mass:
-        result = Mass(0.5218 * self._input_data.screen_ws + 0.6576)
+        result = Mass(0.5218 * self._screen_ws + 0.6576)
         self._order.append('Масса узла РКЭ-06.00.00.00.v01 СБ Крышка: '
                            f'{result:.1f} кг')
         return result
@@ -690,31 +753,47 @@ class BarScreen:
         return result
 
     def _calc_screen_pivot_height(self) -> Distance:
-        result = Distance(0.0985 * self._input_data.screen_hs + 1.0299)
+        result = Distance(0.0985 * self._screen_hs + 1.0299)
         self._order.append('Высота от дна канала до оси поворота решетки: '
                            f'{result:.3f} м')
         return result
 
+    # Типоразмер подставки на пол.
     def _calc_stand_hs(self) -> HeightSerie:
-        result = HeightSerie(
-            round((self._stand_height - 1.0035) / 0.3) * 3 + 10)
+        if 0.4535 <= self._stand_height < 0.6035:
+            result = HeightSerie(6)
+        elif 0.6035 <= self._stand_height < 0.8535:
+            result = HeightSerie(7)
+        elif self._stand_height >= 0.8535:
+            result = HeightSerie(
+                round((self._stand_height - 1.0035) / 0.3) * 3 + 10)
+        else:
+            raise InputDataError('Слишком маленькая опора.')
         self._order.append(f'Типоразмер высоты опоры решетки: {result}')
         return result
 
+    # Масса подставки на пол.
     def _calc_mass_rke08ad(self) -> Mass:
-        result = Mass(1.8267 * self._stand_hs + 8.0633)
+        if self._stand_hs == 6:
+            result = Mass(17.81)
+        elif self._stand_hs == 7:
+            result = Mass(21.47)
+        elif self._stand_hs > 7:
+            result = Mass(1.8267 * self._stand_hs + 8.0633)
+        else:
+            raise InputDataError('Невозможно посчитать массу опоры.')
         self._order.append('Масса узла РКЭ-08.00.00.00.v01 СБ Подставка на '
                            f'пол: {result:.1f} кг')
         return result
 
     def _calc_mass_rke09ad(self) -> Mass:
-        result = Mass(1.7871 * self._input_data.screen_ws - 0.4094)
+        result = Mass(1.7871 * self._screen_ws - 0.4094)
         self._order.append('Масса узла РКЭ-09.00.00.00.v01 СБ Склиз+кожух '
                            f'выброса: {result:.1f} кг')
         return result
 
     def _calc_covers_count(self) -> int:
-        if self._input_data.screen_ws <= 10:
+        if self._screen_ws <= 10:
             result = 2
         else:
             result = 4
@@ -727,14 +806,14 @@ class BarScreen:
         return result
 
     def _calc_mass_rke10ad(self) -> Mass:
-        if self._input_data.screen_ws <= 10:
-            result = Mass(0.06 * self._cover_hs * self._input_data.screen_ws
+        if self._screen_ws <= 10:
+            result = Mass(0.06 * self._cover_hs * self._screen_ws
                           - 0.055 * self._cover_hs
-                          + 0.3167 * self._input_data.screen_ws + 0.3933)
+                          + 0.3167 * self._screen_ws + 0.3933)
         else:
-            result = Mass(0.03 * self._cover_hs * self._input_data.screen_ws
+            result = Mass(0.03 * self._cover_hs * self._screen_ws
                           - 0.0183 * self._cover_hs
-                          + 0.1582 * self._input_data.screen_ws + 0.6052)
+                          + 0.1582 * self._screen_ws + 0.6052)
         self._order.append('Масса узла РКЭ-10.00.00.00-10.v01 СБ Облицовка: '
                            f'{result:.1f} кг')
         return result
@@ -753,8 +832,8 @@ class BarScreen:
 
     # TODO: Возможно рамку нужно делать по высоте канала, а не полотна.
     def _calc_mass_rke13ad(self) -> Mass:
-        result = Mass(0.1811 * self._input_data.grate_hs
-                      + 0.49 * self._input_data.screen_ws + 0.7867)
+        result = Mass(0.1811 * self._grate_hs
+                      + 0.49 * self._screen_ws + 0.7867)
         self._order.append('Масса узла РКЭ-13.00.00.00-(...).v01 СБ Рамка с '
                            f'прутка: {result:.1f} кг')
         return result
@@ -766,7 +845,7 @@ class BarScreen:
         return result
 
     def _calc_mass_rke19ad(self) -> Mass:
-        result = Mass(0.0161 * self._input_data.grate_hs + 0.2067)
+        result = Mass(0.0161 * self._grate_hs + 0.2067)
         self._order.append('Масса узла РКЭ-19.00.00.00.v01 СБ Датчик штыревой:'
                            f' {result:.1f} кг')
         return result

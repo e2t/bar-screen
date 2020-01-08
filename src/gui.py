@@ -1,70 +1,47 @@
+"""Графическая оболочка программы."""
+import sys
 from tkinter import (Tk, W, E, N, S, NORMAL, DISABLED, END, Event, HORIZONTAL,
                      DoubleVar)
 from tkinter.ttk import (Frame, Label, Entry, Button, Combobox, Treeview,
-                         LabelFrame, Widget, Separator)
+                         Separator)
 from tkinter.scrolledtext import ScrolledText
-from typing import Optional, List, Type
-from math import radians
-from barscreen import (FILTER_PROFILES, Distance, InputData, InputDataError,
-                       BarScreen, VolumeFlowRate, Angle)
-from tooltip import Tooltip
+from typing import Optional, List, Dict
+from barscreen import (
+    FILTER_PROFILES, InputData, BarScreen, SCREEN_WIDTH_SERIES,
+    SCREEN_HEIGHT_SERIES, GRATE_HEIGHT_SERIES)
+sys.path.append(f'{sys.path[0]}/..')
+from dry.allgui import MyFrame
+from dry.allcalc import InputDataError, WidthSerie, HeightSerie
+from dry.tooltip import Tooltip
 
 
-def add_pad_to_all_widgets(widget: Type[Widget]) -> None:
-    widget.grid_configure(padx=2, pady=2)
-    if isinstance(widget, (Frame, LabelFrame)):
-        for i in widget.winfo_children():
-            add_pad_to_all_widgets(i)
+CMB_AUTO = 'Авто'
 
 
-class MainForm(Frame):
-    SCREEN_WIDTH_SERIES = range(5, 31)
-    # Повысил со стандартных xx144, чтобы посчитать Филиппины (канал 15.5 м).
-    SCREEN_HEIGHT_SERIES = range(12, 200, 3)
-    GRATE_HEIGHT_SERIES = range(6, 61, 3)
+class MainForm(MyFrame):
+    """Главная форма."""
+
+    SCREEN_WIDTH_CHOICES: Dict[str, Optional[WidthSerie]] = {
+        CMB_AUTO: None,
+        **{f'{i:02d}': WidthSerie(i) for i in SCREEN_WIDTH_SERIES}}
+    SCREEN_HEIGHT_CHOICES: Dict[str, Optional[HeightSerie]] = {
+        CMB_AUTO: None,
+        **{f'{i:02d}': HeightSerie(i) for i in SCREEN_HEIGHT_SERIES}}
+    GRATE_HEIGHT_CHOICES: Dict[str, Optional[HeightSerie]] = {
+        CMB_AUTO: None,
+        **{f'{i:02d}': HeightSerie(i) for i in GRATE_HEIGHT_SERIES}}
 
     def __init__(self, root: Tk) -> None:
-        root.title('Расчет грабельной решетки (v1.1.0)')
+        """Конструктор формы."""
+        root.title('Расчет грабельной решетки (v1.2.0)')
         super().__init__(root)
-        cmbw = 4
+
+        CMB_W = 5
+
         subframe = Frame(self)
         subframe.grid(row=0, column=0, sticky=W)
 
         row = 0
-        Label(subframe, text='Ширина решетки:').grid(row=row, column=0,
-                                                     sticky=W)
-        self._cmb_screen_ws = Combobox(
-            subframe, state='readonly', width=cmbw,
-            values=[f'{i:02d}' for i in self.SCREEN_WIDTH_SERIES])
-        self._cmb_screen_ws.grid(row=row, column=1)
-        self._cmb_screen_ws.current(0)
-
-        row += 1
-        Label(subframe, text='Высота решетки:').grid(row=row, column=0,
-                                                     sticky=W)
-        self._cmb_screen_hs = Combobox(
-            subframe, state='readonly', width=cmbw,
-            values=[f'{i:02d}' for i in self.SCREEN_HEIGHT_SERIES])
-        self._cmb_screen_hs.grid(row=row, column=1)
-        self._cmb_screen_hs.current(0)
-
-        row += 1
-        Label(subframe, text='Полотно:').grid(row=row, column=0, sticky=W)
-        self._cmb_grate_hs = Combobox(
-            subframe, state='readonly', width=cmbw,
-            values=[f'{i:02d}' for i in self.GRATE_HEIGHT_SERIES])
-        self._cmb_grate_hs.grid(row=row, column=1)
-        self._cmb_grate_hs.current(0)
-
-        row += 1
-        Label(subframe, text='Профиль:').grid(row=row, column=0, sticky=W)
-        self._cmb_fp = Combobox(subframe, state='readonly', width=cmbw,
-                                values=[i.name for i in FILTER_PROFILES])
-        self._cmb_fp.grid(row=row, column=1, sticky=W)
-        self._cmb_fp.bind("<<ComboboxSelected>>", self._change_fp_factor)
-        self._cmb_fp.current(0)
-
-        row += 1
         Label(subframe, text='Ширина канала:').grid(row=row, column=0,
                                                     sticky=W)
         self._ent_channel_w = Entry(subframe, width=1)
@@ -73,9 +50,19 @@ class MainForm(Frame):
 
         row += 1
         Label(subframe, text='Глубина канала:').grid(row=row, column=0,
-                                                    sticky=W)
+                                                     sticky=W)
         self._ent_channel_h = Entry(subframe, width=1)
         self._ent_channel_h.grid(row=row, column=1, sticky=W + E)
+        Label(subframe, text='мм').grid(row=row, column=2, sticky=W)
+
+        row += 1
+        Label(subframe, text='Мин. высота сброса:').grid(row=row, column=0,
+                                                         sticky=W)
+        self._ent_min_discharge_h = Entry(subframe, width=1)
+        self._ent_min_discharge_h.grid(row=row, column=1, sticky=W + E)
+        self._ent_min_discharge_h.insert(END, 890)
+        Tooltip(self._ent_min_discharge_h,
+                'Минимальная высота сброса над каналом.')
         Label(subframe, text='мм').grid(row=row, column=2, sticky=W)
 
         row += 1
@@ -83,6 +70,20 @@ class MainForm(Frame):
         self._ent_gap = Entry(subframe, width=1)
         self._ent_gap.grid(row=row, column=1, sticky=W + E)
         Label(subframe, text='мм').grid(row=row, column=2, sticky=W)
+
+        row += 1
+        Label(subframe, text='Профиль:').grid(row=row, column=0, sticky=W)
+        self._cmb_fp = Combobox(subframe, state='readonly', width=CMB_W,
+                                values=[i.name for i in FILTER_PROFILES])
+        self._cmb_fp.grid(row=row, column=1, sticky=W)
+        self._cmb_fp.bind("<<ComboboxSelected>>", self._change_fp_factor)
+        self._cmb_fp.current(0)
+        self._ent_fp_factor_var = DoubleVar()
+        self._ent_fp_factor = Entry(subframe, width=4, state='disable',
+                                    textvariable=self._ent_fp_factor_var)
+        self._ent_fp_factor.grid(row=row, column=2, sticky=W + E)
+        Tooltip(self._ent_fp_factor, 'Коэффициент формы профиля.')
+        self._change_fp_factor(None)
 
         row += 1
         Separator(subframe, orient=HORIZONTAL).grid(row=row, column=0,
@@ -101,10 +102,6 @@ class MainForm(Frame):
         self._ent_final_level.grid(row=row, column=1, sticky=W + E)
         Label(subframe, text='мм').grid(row=row, column=2, sticky=W)
 
-        # Tooltip(self._ent_gap, 'hello12\n3123123')
-        # Tooltip(self._ent_water_flow, 'hello123123')
-        # Tooltip(self._ent_final_level, 'hello')
-
         row += 1
         Label(subframe, text='Угол:').grid(row=row, column=0, sticky=W)
         self._ent_tilt_angle = Entry(subframe, width=1)
@@ -116,13 +113,31 @@ class MainForm(Frame):
         Label(subframe, text='град.').grid(row=row, column=2, sticky=W)
 
         row += 1
-        Label(subframe, text='Коэф. профиля:').grid(row=row, column=0,
-                                                    sticky=W)
-        self._ent_fp_factor_var = DoubleVar()
-        self._ent_fp_factor = Entry(subframe, width=1, state='disable',
-                                    textvariable=self._ent_fp_factor_var)
-        self._ent_fp_factor.grid(row=row, column=1, sticky=W + E)
-        self._change_fp_factor(None)
+        Separator(subframe, orient=HORIZONTAL).grid(row=row, column=0,
+                                                    columnspan=3, sticky=W + E)
+
+        row += 1
+        Label(subframe, text='Ширина решетки:').grid(row=row, column=0,
+                                                     sticky=W)
+        self._cmb_screen_ws = Combobox(subframe, state='readonly', width=CMB_W,
+                                       values=list(self.SCREEN_WIDTH_CHOICES))
+        self._cmb_screen_ws.grid(row=row, column=1)
+        self._cmb_screen_ws.current(0)
+
+        row += 1
+        Label(subframe, text='Высота решетки:').grid(row=row, column=0,
+                                                     sticky=W)
+        self._cmb_screen_hs = Combobox(subframe, state='readonly', width=CMB_W,
+                                       values=list(self.SCREEN_HEIGHT_CHOICES))
+        self._cmb_screen_hs.grid(row=row, column=1)
+        self._cmb_screen_hs.current(0)
+
+        row += 1
+        Label(subframe, text='Полотно:').grid(row=row, column=0, sticky=W)
+        self._cmb_grate_hs = Combobox(subframe, state='readonly', width=CMB_W,
+                                      values=list(self.GRATE_HEIGHT_CHOICES))
+        self._cmb_grate_hs.grid(row=row, column=1)
+        self._cmb_grate_hs.current(0)
 
         self._memo = ScrolledText(self, state=DISABLED, height=1)
         self._memo.grid(row=0, column=1, sticky=W + E + N + S)
@@ -147,10 +162,12 @@ class MainForm(Frame):
 
         Button(self, text='Расчет', command=self._run).grid(row=2, column=1,
                                                             sticky=E)
-        add_pad_to_all_widgets(self)
         self.bind_all('<Return>', self._on_press_enter)
 
-    def _change_fp_factor(self, eventObject) -> None:
+        self._add_pad_to_all_widgets(self)
+        self._focus_first_entry(self)
+
+    def _change_fp_factor(self, _) -> None:
         value = FILTER_PROFILES[self._cmb_fp.current()].shape_factor
         self._ent_fp_factor_var.set(value)
 
@@ -160,69 +177,21 @@ class MainForm(Frame):
         self._memo.insert(END, text)
         self._memo.config(state=DISABLED)
 
-    def _get_float_from_string(self, text: str) -> float:
-        value = float(text)
-        if value <= 0:
-            raise ValueError
-        return value
-
-    def _print_error_and_select(self, entry: Entry) -> None:
-        self._output('Неправильное значение.')
-        entry.focus_set()
-        entry.select_range(0, 'end')
-
-    def _get_float_from_entry(self, entry: Entry) -> float:
-        try:
-            value = self._get_float_from_string(entry.get())
-        except ValueError:
-            self._print_error_and_select(entry)
-            raise
-        return value
-
-    def _get_opt_float_from_entry(self, entry: Entry) -> Optional[float]:
-        text = entry.get()
-        if not text:
-            return None
-        try:
-            value = self._get_float_from_string(text)
-        except ValueError:
-            self._print_error_and_select(entry)
-            raise
-        return value
-
-    def _get_mm_from_entry(self, entry: Entry) -> Distance:
-        value = self._get_float_from_entry(entry)
-        return Distance(value / 1e3)  # мм -> м
-
-    def _get_opt_mm_from_entry(self, entry: Entry) -> Optional[Distance]:
-        value = self._get_opt_float_from_entry(entry)
-        if value is not None:
-            return Distance(value / 1e3)  # мм -> м
-        return None
-
-    def _get_opt_l_s_from_entry(
-            self, entry: Entry) -> Optional[VolumeFlowRate]:
-        value = self._get_opt_float_from_entry(entry)
-        if value is not None:
-            return VolumeFlowRate(value / 1e3)  # л/с -> м3/с
-        return None
-
-    def _get_opt_deg_from_entry(self, entry: Entry) -> Optional[Angle]:
-        value = self._get_opt_float_from_entry(entry)
-        if value is not None:
-            return Angle(radians(value))  # градусы -> радианы
-        return None
+    def _print_error(self, text: str) -> None:
+        self._output(text)
 
     def _run(self) -> None:
         self._table.delete(*self._table.get_children())
 
-        screen_ws = self.SCREEN_WIDTH_SERIES[self._cmb_screen_ws.current()]
-        screen_hs = self.SCREEN_HEIGHT_SERIES[self._cmb_screen_hs.current()]
+        screen_ws = self.SCREEN_WIDTH_CHOICES[self._cmb_screen_ws.get()]
+        screen_hs = self.SCREEN_HEIGHT_CHOICES[self._cmb_screen_hs.get()]
         fp = FILTER_PROFILES[self._cmb_fp.current()]
-        grate_hs = self.GRATE_HEIGHT_SERIES[self._cmb_grate_hs.current()]
+        grate_hs = self.GRATE_HEIGHT_CHOICES[self._cmb_grate_hs.get()]
         try:
             channel_width = self._get_mm_from_entry(self._ent_channel_w)
             channel_height = self._get_mm_from_entry(self._ent_channel_h)
+            min_discharge_height = self._get_mm_from_entry(
+                self._ent_min_discharge_h)
             gap = self._get_mm_from_entry(self._ent_gap)
             water_flow = self._get_opt_l_s_from_entry(self._ent_water_flow)
             final_level = self._get_opt_mm_from_entry(self._ent_final_level)
@@ -234,7 +203,8 @@ class MainForm(Frame):
                                grate_hs=grate_hs, channel_width=channel_width,
                                channel_height=channel_height, fp=fp, gap=gap,
                                water_flow=water_flow, final_level=final_level,
-                               tilt_angle=tilt_angle)
+                               tilt_angle=tilt_angle,
+                               min_discharge_height=min_discharge_height)
         order: List[str] = []
         try:
             bs = BarScreen(input_data, order)

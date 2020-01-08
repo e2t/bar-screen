@@ -12,8 +12,8 @@ class Tooltip():
 
     def showtip(self, _: Event) -> None:
         """Display text in tooltip window."""
-        x, y, cx, cy = self.widget.bbox("insert")
-        x = x + self.widget.winfo_rootx() + 25
+        # x, y, cx, cy = self.widget.bbox("insert")
+        x = self.widget.winfo_rootx() + 20
         y = self.widget.winfo_rooty() + self.widget.winfo_height() + 1
         self.tipwindow = Toplevel(self.widget)
         self.tipwindow.wm_overrideredirect(True)
