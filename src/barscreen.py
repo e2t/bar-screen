@@ -328,7 +328,7 @@ class BarScreen:
 
     @staticmethod
     def _calc_discharge_full_height(screen_hs: HeightSerie) -> Distance:
-        return Distance((98.4667 * screen_hs + 961.4) / 1e3)
+        return Distance(round((98.4667 * screen_hs + 961.4) / 1e3, 3))
 
     def _calc_b_hydraulic(self) -> Optional[Distance]:
         if self._input_data.final_level is not None:

@@ -33,7 +33,7 @@ class MainForm(MyFrame):
 
     def __init__(self, root: Tk) -> None:
         """Конструктор формы."""
-        root.title('Расчет грабельной решетки (v1.2.0)')
+        root.title('Расчет грабельной решетки (v1.2.1)')
         super().__init__(root)
 
         CMB_W = 5
@@ -160,12 +160,26 @@ class MainForm(MyFrame):
         self._table.column('#6', width=150)
         self._table.grid(row=1, columnspan=2, sticky=W + E)
 
-        Button(self, text='Расчет', command=self._run).grid(row=2, column=1,
-                                                            sticky=E)
+        btn_frame = Frame(self)
+        btn_frame.grid(row=2, column=1, sticky=E)
+
+        Button(btn_frame, text='Копировать',
+               command=self._copy_output_to_clipboard).grid(row=0, column=0)
+        Button(btn_frame, text='Расчет', command=self._run).grid(row=0,
+                                                                 column=1)
         self.bind_all('<Return>', self._on_press_enter)
 
         self._add_pad_to_all_widgets(self)
         self._focus_first_entry(self)
+
+    def _copy_output_to_clipboard(self) -> None:
+        if self._memo.tag_ranges('sel'):
+            text = self._memo.selection_get()
+        else:
+            text = self._memo.get(1.0, END)
+        self.clipboard_clear()
+        self.clipboard_append(text)
+        self._memo.focus_force()
 
     def _change_fp_factor(self, _) -> None:
         value = FILTER_PROFILES[self._cmb_fp.current()].shape_factor
