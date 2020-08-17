@@ -108,4 +108,4 @@ output/
 *.gz
 *.pdf
 *.aux
-*.geany
+*.vscode
