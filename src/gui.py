@@ -1,25 +1,19 @@
 """Графическая оболочка программы."""
 import locale
-from tkinter import (Tk, W, E, N, S, NORMAL, DISABLED, END, Event, HORIZONTAL)
+from tkinter import (Tk, W, E, N, S, NORMAL, DISABLED, END, Event, HORIZONTAL, NO, YES)
 from tkinter.ttk import (Frame, Label, Entry, Button, Combobox, Treeview, Separator, Style)
 from tkinter.scrolledtext import ScrolledText
 from typing import Optional, Dict
 from barscreen import (
     FILTER_PROFILES, InputData, BarScreen, SCREEN_WIDTH_SERIES, SCREEN_HEIGHT_SERIES,
     GRATE_HEIGHT_SERIES)
-from dry.allgui import MyFrame, handle_ctrl_shortcut, fstr, format_params, SortableTreeview
+from dry.allgui import MyFrame, handle_ctrl_shortcut, fstr, SortableTreeview
 from dry.allcalc import InputDataError, WidthSerie, HeightSerie
 from dry.tooltip import Tooltip
 locale.setlocale(locale.LC_NUMERIC, '')
 
 
 CMB_AUTO = 'Авто'
-
-def get_dpi(window):
-    MM_TO_IN = 1/25.4
-    pxw = window.master.winfo_screenwidth()
-    inw = window.master.winfo_screenmmwidth() * MM_TO_IN
-    return pxw/inw
 
 
 class MainForm(MyFrame):
@@ -46,11 +40,11 @@ class MainForm(MyFrame):
 
         self.dpi = root.winfo_fpixels('1i')
 
-        def fdpi(pixels):
-            return int(pixels * self.dpi / 96)        
+        def fdpi(pixels: int) -> int:
+            return int(pixels * self.dpi / 96)
 
         s = Style()
-        s.configure('DPI.Treeview', rowheight=fdpi(20))         
+        s.configure('DPI.Treeview', rowheight=fdpi(20))
 
         cmb_w = 5
 
@@ -128,9 +122,9 @@ class MainForm(MyFrame):
         self._cmb_grate_hs.current(0)
 
         row += 1
-        from tkinter import NO, YES
-        self._fp_table = SortableTreeview(left_frame, columns=[''] * 3, show='headings',
-                                          height=len(self.FILTER_PROFILE_CHOICES), style='DPI.Treeview')
+        self._fp_table = SortableTreeview(
+            left_frame, columns=[''] * 3, show='headings', height=len(self.FILTER_PROFILE_CHOICES),
+            style='DPI.Treeview')
         self._fp_table.heading('#1', text='Профиль', sort_as='str')
         self._fp_table.column('#1', width=fdpi(70), stretch=NO)
         self._fp_table.heading('#2', text='Крепление', sort_as='str')
@@ -154,7 +148,8 @@ class MainForm(MyFrame):
         self._memo.grid(row=0, column=0, sticky=W + E + N + S)
 
         # TODO: Привязать к уровню загрязнений (4).
-        self._hydr_table = Treeview(right_frame, columns=[''] * 7, height=4, show='headings', style='DPI.Treeview')
+        self._hydr_table = Treeview(right_frame, columns=[''] * 7, height=4, show='headings',
+                                    style='DPI.Treeview')
         self._hydr_table.heading('#1', text='Загрязнение')
         self._hydr_table.column('#1', anchor=E, width=fdpi(95))
         self._hydr_table.heading('#2', text='Скорость в прозорах')
@@ -236,8 +231,6 @@ class MainForm(MyFrame):
             'Ширина сброса {} мм'.format(fstr(bs.discharge_width * 1e3, '%.0f')),
             'Высота сброса (над каналом) {} мм'.format(fstr(bs.discharge_height * 1e3, '%.0f')),
             'Высота сброса (до дна) {} мм'.format(fstr(bs.discharge_full_height * 1e3, '%.0f'))]
-
-        # output.append(format_params(lines))
 
         for blinding, hydr in bs.hydraulic.items():
             self._hydr_table.insert('', 'end', None, values=(
