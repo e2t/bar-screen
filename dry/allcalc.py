@@ -13,6 +13,7 @@ Velocity = NewType('Velocity', float)              # Векторная скор
 Area = NewType('Area', float)                      # Площадь, м2.
 Acceleration = NewType('Acceleration', float)      # Ускорение, м/с2.
 Torque = NewType('Torque', float)                  # Крутящий момент, Нм.
+Rotation = NewType('Rotation', float)              # Угловая скорость (скорость вращения), рад/с.
 
 GRAV_ACC = Acceleration(9.80665)
 

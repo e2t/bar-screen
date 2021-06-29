@@ -133,3 +133,6 @@ dmypy.json
 output/
 *.bat
 *.iss
+dry/
+!dry/*.py
+vba/

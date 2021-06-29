@@ -1,15 +1,18 @@
 """Графическая оболочка программы."""
 import locale
-from tkinter import (Tk, W, E, N, S, NORMAL, DISABLED, END, Event, HORIZONTAL, NO, YES)
-from tkinter.ttk import (Frame, Label, Entry, Button, Combobox, Treeview, Separator, Style)
+from tkinter import (Tk, W, E, N, S, NORMAL, DISABLED,
+                     END, Event, HORIZONTAL, NO, YES)
+from tkinter.ttk import (Frame, Label, Entry, Button,
+                         Combobox, Treeview, Separator, Style)
 from tkinter.scrolledtext import ScrolledText
 from typing import Optional, Dict
+from Dry.allgui import MyFrame, handle_ctrl_shortcut, fstr, SortableTreeview, to_mm
+from Dry.allcalc import InputDataError, WidthSerie, HeightSerie
+from Dry.tooltip import Tooltip
 from barscreen import (
     FILTER_PROFILES, InputData, BarScreen, SCREEN_WIDTH_SERIES, SCREEN_HEIGHT_SERIES,
-    GRATE_HEIGHT_SERIES)
-from dry.allgui import MyFrame, handle_ctrl_shortcut, fstr, SortableTreeview
-from dry.allcalc import InputDataError, WidthSerie, HeightSerie
-from dry.tooltip import Tooltip
+    GRATE_HEIGHT_SERIES, DEFAULT_DISCHARGE_HEIGHT, STD_GAPS, DEFAULT_TILT_ANGLE, MassLarge,
+    MassSmall)
 locale.setlocale(locale.LC_NUMERIC, '')
 
 
@@ -32,10 +35,11 @@ class MainForm(MyFrame):
         i.name,
         'съемный' if i.is_removable else 'сварной',
         fstr(i.shape_factor)) for i in FILTER_PROFILES]
+    GAP_CHOICES = [fstr(to_mm(i)) for i in STD_GAPS]
 
     def __init__(self, root: Tk) -> None:
         """Конструктор формы."""
-        root.title('Расчет грабельной решетки (v1.2.2)')
+        root.title('Расчет грабельной решетки (v1.3.0)')
         super().__init__(root)
 
         self.dpi = root.winfo_fpixels('1i')
@@ -52,25 +56,32 @@ class MainForm(MyFrame):
         left_frame.grid(row=0, column=0)
 
         row = 0
-        Label(left_frame, text='Ширина канала (мм):').grid(row=row, column=0, sticky=W)
+        Label(left_frame, text='Ширина канала (мм):').grid(
+            row=row, column=0, sticky=W)
         self._ent_channel_w = Entry(left_frame, width=1)
         self._ent_channel_w.grid(row=row, column=1, sticky=W + E)
 
         row += 1
-        Label(left_frame, text='Глубина канала (мм):').grid(row=row, column=0, sticky=W)
+        Label(left_frame, text='Глубина канала (мм):').grid(
+            row=row, column=0, sticky=W)
         self._ent_channel_h = Entry(left_frame, width=1)
         self._ent_channel_h.grid(row=row, column=1, sticky=W + E)
 
         row += 1
-        Label(left_frame, text='Мин. высота сброса (мм):').grid(row=row, column=0, sticky=W)
+        Label(left_frame, text='Мин. высота сброса (мм):').grid(
+            row=row, column=0, sticky=W)
         self._ent_min_discharge_h = Entry(left_frame, width=1)
         self._ent_min_discharge_h.grid(row=row, column=1, sticky=W + E)
-        self._ent_min_discharge_h.insert(END, 890)
-        Tooltip(self._ent_min_discharge_h, 'Минимальная высота сброса над каналом.')
+        self._ent_min_discharge_h.insert(
+            END, fstr(to_mm(DEFAULT_DISCHARGE_HEIGHT)))
+        Tooltip(self._ent_min_discharge_h,
+                'Минимальная высота сброса над каналом.')
 
         row += 1
-        Label(left_frame, text='Прозор (мм):').grid(row=row, column=0, sticky=W)
-        self._ent_gap = Entry(left_frame, width=1)
+        Label(left_frame, text='Прозор (мм):').grid(
+            row=row, column=0, sticky=W)
+        self._ent_gap = Combobox(
+            left_frame, width=cmb_w, values=list(self.GAP_CHOICES))
         self._ent_gap.grid(row=row, column=1, sticky=W + E)
 
         row += 1
@@ -83,39 +94,44 @@ class MainForm(MyFrame):
         self._ent_water_flow.grid(row=row, column=1, sticky=W + E)
 
         row += 1
-        Label(left_frame, text='Уровень за решеткой (мм):').grid(row=row, column=0, sticky=W)
+        Label(left_frame, text='Уровень за решеткой (мм):').grid(
+            row=row, column=0, sticky=W)
         self._ent_final_level = Entry(left_frame, width=1)
         self._ent_final_level.grid(row=row, column=1, sticky=W + E)
 
         row += 1
-        Label(left_frame, text='Угол (градусы):').grid(row=row, column=0, sticky=W)
+        Label(left_frame, text='Угол (градусы):').grid(
+            row=row, column=0, sticky=W)
         self._ent_tilt_angle = Entry(left_frame, width=1)
         self._ent_tilt_angle.grid(row=row, column=1, sticky=W + E)
-        self._ent_tilt_angle.insert(END, 80)
+        self._ent_tilt_angle.insert(END, DEFAULT_TILT_ANGLE)
         Tooltip(self._ent_tilt_angle,
-                'Угол используется только для гидравлического расчета.\n'
-                'Масса решетки рассчитывается для угла 80 градусов.')
+                'Угол используется для расчета привода и гидравлики.\n'
+                f'Масса решетки рассчитывается для угла {DEFAULT_TILT_ANGLE} градусов.')
 
         row += 1
         Separator(left_frame, orient=HORIZONTAL).grid(row=row, column=0, columnspan=2,
                                                       sticky=W + E)
 
         row += 1
-        Label(left_frame, text='Типоразмер по ширине:').grid(row=row, column=0, sticky=W)
+        Label(left_frame, text='Типоразмер по ширине:').grid(
+            row=row, column=0, sticky=W)
         self._cmb_screen_ws = Combobox(left_frame, state='readonly', width=cmb_w,
                                        values=list(self.SCREEN_WIDTH_CHOICES))
         self._cmb_screen_ws.grid(row=row, column=1)
         self._cmb_screen_ws.current(0)
 
         row += 1
-        Label(left_frame, text='Типоразмер по высоте:').grid(row=row, column=0, sticky=W)
+        Label(left_frame, text='Типоразмер по высоте:').grid(
+            row=row, column=0, sticky=W)
         self._cmb_screen_hs = Combobox(left_frame, state='readonly', width=cmb_w,
                                        values=list(self.SCREEN_HEIGHT_CHOICES))
         self._cmb_screen_hs.grid(row=row, column=1)
         self._cmb_screen_hs.current(0)
 
         row += 1
-        Label(left_frame, text='Типоразмер полотна:').grid(row=row, column=0, sticky=W)
+        Label(left_frame, text='Типоразмер полотна:').grid(
+            row=row, column=0, sticky=W)
         self._cmb_grate_hs = Combobox(left_frame, state='readonly', width=cmb_w,
                                       values=list(self.GRATE_HEIGHT_CHOICES))
         self._cmb_grate_hs.grid(row=row, column=1)
@@ -144,7 +160,7 @@ class MainForm(MyFrame):
         right_frame.grid(row=0, column=1, sticky=N + S)
         right_frame.grid_rowconfigure(0, weight=1)
 
-        self._memo = ScrolledText(right_frame, state=DISABLED, height=1)
+        self._memo = ScrolledText(right_frame, state=DISABLED, height=1, font="TkDefaultFont")
         self._memo.grid(row=0, column=0, sticky=W + E + N + S)
 
         # TODO: Привязать к уровню загрязнений (4).
@@ -169,7 +185,8 @@ class MainForm(MyFrame):
         btn_frame = Frame(self)
         btn_frame.grid(row=2, column=1, sticky=E)
 
-        Button(btn_frame, text='Рассчитать', command=self._run).grid(row=0, column=1)
+        Button(btn_frame, text='Рассчитать',
+               command=self._run).grid(row=0, column=1)
         self.bind_all('<Return>', self._on_press_enter)
 
         self._add_pad_to_all_widgets()
@@ -195,11 +212,12 @@ class MainForm(MyFrame):
         try:
             channel_width = self._get_mm_from_entry(self._ent_channel_w)
             channel_height = self._get_mm_from_entry(self._ent_channel_h)
-            min_discharge_height = self._get_mm_from_entry(self._ent_min_discharge_h)
+            min_discharge_height = self._get_mm_from_entry(
+                self._ent_min_discharge_h)
             gap = self._get_mm_from_entry(self._ent_gap)
             water_flow = self._get_opt_l_s_from_entry(self._ent_water_flow)
             final_level = self._get_opt_mm_from_entry(self._ent_final_level)
-            tilt_angle = self._get_opt_deg_from_entry(self._ent_tilt_angle)
+            tilt_angle = self._get_deg_from_entry(self._ent_tilt_angle)
         except ValueError:
             return
 
@@ -210,28 +228,52 @@ class MainForm(MyFrame):
             min_discharge_height=min_discharge_height)
         try:
             bs = BarScreen(input_data)
+            if bs.is_small:
+                bs_mass = MassSmall(bs).mass
+            else:
+                bs_mass = MassLarge(bs).mass
         except InputDataError as excp:
             self._output(str(excp))
             return
 
+        if bs.drive:
+            drive = '«{}»  {} кВт, {} Нм'.format(
+                bs.drive.name,
+                fstr(bs.drive.power / 1e3),
+                fstr(bs.drive.output_torque,)
+            )
+        else:
+            drive = 'нестандартный'
+
+        if bs.is_small:
+            approx_eq = '≈'
+        else:
+            approx_eq = ''
+
         output = [
             bs.designation,
             'Масса {} кг{}'.format(
-                fstr(bs.mass, '%.0f'), ' (примерно)' if not bs.is_standard_serie else ''),
-            'Привод {} кВт'.format(
-                fstr(bs.drive_power / 1e3) if bs.drive_power else 'нестандартный'),
+                fstr(bs_mass, '%.0f'), ' (примерно)' if not bs.is_standard_serie else ''),
+            f'Привод {drive}',
             '',
-            'Ширина просвета {} мм'.format(fstr(bs.inner_screen_width * 1e3, '%.0f')),
-            'Высота просвета (от дна) {} мм'.format(fstr(bs.inner_screen_height * 1e3, '%.0f')),
+            'Ширина просвета {} мм'.format(
+                fstr(bs.inner_screen_width * 1e3, '%.0f')),
+            'Высота просвета (от дна) {} мм'.format(
+                fstr(bs.inner_screen_height * 1e3, '%.0f')),
             'Длина решетки {} мм'.format(fstr(bs.screen_length * 1e3, '%.0f')),
             'Длина цепи {} мм'.format(fstr(bs.chain_length * 1e3, '%.0f')),
             'Длина профиля {} мм'.format(fstr(bs.fp_length * 1e3, '%.0f')),
             'Количество профилей {} ± 1 шт.'.format(fstr(bs.profiles_count)),
             'Количество граблин {} шт.'.format(fstr(bs.rakes_count)),
-            'Ширина сброса {} мм'.format(fstr(bs.discharge_width * 1e3, '%.0f')),
-            'Высота сброса (над каналом) {} мм'.format(fstr(bs.discharge_height * 1e3, '%.0f')),
-            'Высота сброса (до дна) {} мм'.format(fstr(bs.discharge_full_height * 1e3, '%.0f'))]
+            'Ширина сброса {} мм'.format(
+                fstr(bs.discharge_width * 1e3, '%.0f')),
+            'Высота сброса (над каналом) {}{} мм'.format(
+                approx_eq, fstr(bs.discharge_height * 1e3, '%.0f')),
+            'Высота сброса (до дна) {}{} мм'.format(
+                approx_eq, fstr(bs.discharge_full_height * 1e3, '%.0f')),
+            '']
 
+        have_warnings = False
         for blinding, hydr in bs.hydraulic.items():
             self._hydr_table.insert('', 'end', None, values=(
                 '{}%'.format(fstr(blinding * 100)),
@@ -253,14 +295,20 @@ class MainForm(MyFrame):
                 diff = round(hydr.start_level - bs.inner_screen_height, 3)
                 overflow_grate = diff >= 0
                 if overflow_channel or overflow_grate:
-                    output += '\n{}% - '.format(fstr(blinding * 100))
+                    have_warnings = True
                     warnings = []
                     if overflow_channel:
                         warnings.append('переполнение канала')
                     if overflow_grate:
                         warnings.append('уровень выше полотна ({} мм)'.format(
                             fstr(diff * 1e3, '%.0f')))
-                    output.append(', '.join(warnings))
+                    output.append(
+                        '{}% - '.format(fstr(blinding * 100)) + ', '.join(warnings))
+
+        if have_warnings:
+            output.append('')
+        output.append('Минимальный крутящий момент: {} Нм'.format(
+            fstr(bs.min_torque, '%.0f')))
         self._output('\n'.join(output))
 
     def _on_press_enter(self, _: Event) -> None:
