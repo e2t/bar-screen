@@ -1,11 +1,6 @@
-﻿# Bar-Screen
+# Bar-Screen
 
 Приложение для расчета грабельных решеток.
-
-## Requirements
-
-- Python 3.7+
-- Tkinter
 
 ## License
 
