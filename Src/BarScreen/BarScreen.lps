@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Default"/>
+    <Units>
+      <Unit>
+        <Filename Value="BarScreen.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <TopLine Value="7"/>
+        <CursorPos X="26" Y="19"/>
+        <UsageCount Value="74"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="umainform.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="MainForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="UMainForm"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="494"/>
+        <CursorPos X="36" Y="310"/>
+        <ExtraEditorCount Value="1"/>
+        <ExtraEditor1>
+          <EditorIndex Value="1"/>
+          <WindowIndex Value="1"/>
+          <TopLine Value="43"/>
+          <CursorPos Y="3"/>
+        </ExtraEditor1>
+        <UsageCount Value="74"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="upresenter.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UPresenter"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="135"/>
+        <CursorPos X="16" Y="144"/>
+        <UsageCount Value="74"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\basecalcapp.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="BaseCalcApp"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="262"/>
+        <CursorPos X="22" Y="290"/>
+        <UsageCount Value="73"/>
+      </Unit>
+      <Unit>
+        <Filename Value="model.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Model"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="255"/>
+        <CursorPos X="30" Y="276"/>
+        <ExtraEditorCount Value="1"/>
+        <ExtraEditor1>
+          <WindowIndex Value="1"/>
+          <TopLine Value="663"/>
+          <CursorPos Y="1229"/>
+        </ExtraEditor1>
+        <UsageCount Value="73"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="texts.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Texts"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="141"/>
+        <CursorPos X="33" Y="302"/>
+        <ExtraEditorCount Value="1"/>
+        <ExtraEditor1>
+          <EditorIndex Value="-1"/>
+          <WindowIndex Value="1"/>
+          <TopLine Value="356"/>
+          <CursorPos X="5" Y="405"/>
+        </ExtraEditor1>
+        <UsageCount Value="73"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\guiutils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="GuiUtils"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="51"/>
+        <CursorPos X="27" Y="69"/>
+        <UsageCount Value="73"/>
+      </Unit>
+      <Unit>
+        <Filename Value="textout.pas"/>
+        <UnitName Value="TextOut"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="19"/>
+      </Unit>
+      <Unit>
+        <Filename Value="texterror.pas"/>
+        <UnitName Value="TextError"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="19"/>
+      </Unit>
+      <Unit>
+        <Filename Value="C:\lazarus\fpc\3.2.2\source\rtl\objpas\fgl.pp"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="1560"/>
+        <CursorPos Y="1577"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\mathutils.pas"/>
+        <UnitName Value="MathUtils"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="23" Y="6"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\umsgqueue.pas"/>
+        <UnitName Value="UMsgQueue"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="88"/>
+        <CursorPos X="16" Y="103"/>
+        <UsageCount Value="12"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\measurementutils.pas"/>
+        <UnitName Value="MeasurementUtils"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="20" Y="105"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\floatutils.pas"/>
+        <UnitName Value="FloatUtils"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="50"/>
+        <CursorPos X="19" Y="76"/>
+        <UsageCount Value="11"/>
+      </Unit>
+      <Unit>
+        <Filename Value="C:\lazarus\fpc\3.2.2\source\rtl\objpas\sysutils\sysutilh.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="313"/>
+        <CursorPos X="20" Y="330"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="C:\lazarus\fpc\3.2.2\source\rtl\objpas\sysutils\sysutils.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="154"/>
+        <CursorPos X="9" Y="158"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="C:\lazarus\fpc\3.2.2\source\rtl\objpas\classes\classesh.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="683"/>
+        <CursorPos X="22" Y="699"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="C:\lazarus\fpc\3.2.2\source\rtl\objpas\classes\stringl.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="1017"/>
+        <CursorPos X="3" Y="1020"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\usettings.pas"/>
+        <UnitName Value="USettings"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="69"/>
+        <CursorPos X="30" Y="7"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\complexutils.pas"/>
+        <UnitName Value="ComplexUtils"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="6"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\errors.pas"/>
+        <UnitName Value="Errors"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\l10n.pas"/>
+        <UnitName Value="L10n"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="34"/>
+        <CursorPos X="37" Y="7"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\optional.pas"/>
+        <UnitName Value="Optional"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\stringutils.pas"/>
+        <UnitName Value="StringUtils"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\heaptrcutils.pas"/>
+        <UnitName Value="HeaptrcUtils"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos Y="12"/>
+        <UsageCount Value="20"/>
+      </Unit>
+    </Units>
+    <OtherDefines Count="1">
+      <Define0 Value="DEBUG"/>
+    </OtherDefines>
+    <JumpHistory HistoryIndex="29">
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="106" Column="14" TopLine="92"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="437" Column="22" TopLine="428"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="108" Column="14" TopLine="94"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="415" Column="21" TopLine="402"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="699" Column="22" TopLine="673"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="415" Column="21" TopLine="400"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="699" Column="22" TopLine="673"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="308" Column="20" TopLine="305"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="95" Column="16" TopLine="78"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="308" Column="27" TopLine="307"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="450" Column="31" TopLine="435"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="110" Column="24" TopLine="96"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="437" Column="22" TopLine="418"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="116" Column="17" TopLine="101"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="437" Column="20" TopLine="426"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="108" Column="20" TopLine="94"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="437" Column="22" TopLine="429"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="108" Column="14" TopLine="94"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="693" Column="26" TopLine="691"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="108" Column="25" TopLine="94"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="439" Column="30" TopLine="418"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="693" Column="40" TopLine="679"/>
+      </Position>
+      <Position>
+        <Filename Value="model.pas"/>
+        <Caret Line="108" Column="25" TopLine="96"/>
+      </Position>
+      <Position>
+        <Filename Value="BarScreen.lpr"/>
+        <Caret Line="23" Column="13"/>
+      </Position>
+      <Position>
+        <Filename Value="upresenter.pas"/>
+        <Caret Line="232" Column="22" TopLine="227"/>
+      </Position>
+      <Position>
+        <Filename Value="upresenter.pas"/>
+        <Caret Line="267" Column="44" TopLine="256"/>
+      </Position>
+      <Position>
+        <Filename Value="upresenter.pas"/>
+        <Caret Line="110" Column="34" TopLine="94"/>
+      </Position>
+      <Position>
+        <Filename Value="upresenter.pas"/>
+        <Caret Line="267" Column="44" TopLine="256"/>
+      </Position>
+      <Position>
+        <Filename Value="upresenter.pas"/>
+        <Caret Line="110" Column="34" TopLine="94"/>
+      </Position>
+      <Position>
+        <Filename Value="upresenter.pas"/>
+        <Caret Line="227" Column="9" TopLine="211"/>
+      </Position>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>

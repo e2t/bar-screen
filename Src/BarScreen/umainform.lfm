@@ -1,0 +1,284 @@
+object MainForm: TMainForm
+  Left = 429
+  Height = 532
+  Top = 179
+  Width = 1120
+  Caption = 'MainForm'
+  ClientHeight = 532
+  ClientWidth = 1120
+  Menu = MainMenu1
+  Position = poDefaultPosOnly
+  LCLVersion = '3.0.0.3'
+  object MainButtonPanel: TButtonPanel
+    Left = 6
+    Height = 26
+    Top = 500
+    Width = 1108
+    OKButton.Name = 'OKButton'
+    OKButton.DefaultCaption = True
+    OKButton.OnClick = OKButtonClick
+    HelpButton.Name = 'HelpButton'
+    HelpButton.DefaultCaption = True
+    CloseButton.Name = 'CloseButton'
+    CloseButton.DefaultCaption = True
+    CancelButton.Name = 'CancelButton'
+    CancelButton.DefaultCaption = True
+    TabOrder = 0
+    ShowButtons = [pbOK]
+    ShowGlyphs = []
+    ShowBevel = False
+  end
+  object WchLabel: TLabel
+    AnchorSideTop.Control = WchBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 12
+    Width = 52
+    Caption = 'WchLabel'
+  end
+  object WchBox: TEdit
+    Left = 168
+    Height = 23
+    Top = 8
+    Width = 100
+    TabOrder = 1
+  end
+  object DchLabel: TLabel
+    AnchorSideTop.Control = DchBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 44
+    Width = 49
+    Caption = 'DchLabel'
+  end
+  object DchBox: TEdit
+    Left = 168
+    Height = 23
+    Top = 40
+    Width = 100
+    TabOrder = 2
+  end
+  object DropLabel: TLabel
+    AnchorSideTop.Control = DropBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 76
+    Width = 54
+    Caption = 'DropLabel'
+  end
+  object DropBox: TEdit
+    Left = 168
+    Height = 23
+    Top = 72
+    Width = 100
+    TabOrder = 3
+  end
+  object GapLabel: TLabel
+    AnchorSideTop.Control = GapBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 108
+    Width = 49
+    Caption = 'GapLabel'
+  end
+  object GapBox: TComboBox
+    Left = 168
+    Height = 23
+    Top = 104
+    Width = 100
+    ItemHeight = 15
+    Style = csDropDownList
+    TabOrder = 4
+  end
+  object WsLabel: TLabel
+    AnchorSideTop.Control = WsBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 140
+    Width = 44
+    Caption = 'WsLabel'
+  end
+  object HsLabel: TLabel
+    AnchorSideTop.Control = HsBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 172
+    Width = 42
+    Caption = 'HsLabel'
+  end
+  object GsLabel: TLabel
+    AnchorSideTop.Control = GsBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 204
+    Width = 41
+    Caption = 'GsLabel'
+  end
+  object WsBox: TComboBox
+    Left = 168
+    Height = 23
+    Top = 136
+    Width = 100
+    ItemHeight = 15
+    Style = csDropDownList
+    TabOrder = 5
+  end
+  object HsBox: TComboBox
+    Left = 168
+    Height = 23
+    Top = 168
+    Width = 100
+    ItemHeight = 15
+    Style = csDropDownList
+    TabOrder = 6
+  end
+  object GsBox: TComboBox
+    Left = 168
+    Height = 23
+    Top = 200
+    Width = 100
+    ItemHeight = 15
+    Style = csDropDownList
+    TabOrder = 7
+  end
+  object ProfTable: TListView
+    Left = 8
+    Height = 146
+    Top = 232
+    Width = 260
+    AutoWidthLastColumn = True
+    Columns = <    
+      item
+        Width = 80
+      end    
+      item
+        Width = 80
+      end    
+      item
+        Width = 96
+      end>
+    HideSelection = False
+    ReadOnly = True
+    RowSelect = True
+    TabOrder = 8
+    ViewStyle = vsReport
+  end
+  object HydrLabel: TLabel
+    AnchorSideLeft.Control = ProfTable
+    AnchorSideLeft.Side = asrCenter
+    Left = 111
+    Height = 15
+    Top = 384
+    Width = 54
+    Caption = 'HydrLabel'
+  end
+  object FlowLabel: TLabel
+    AnchorSideTop.Control = FlowBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 412
+    Width = 53
+    Caption = 'FlowLabel'
+  end
+  object LevelLabel: TLabel
+    AnchorSideTop.Control = LevelBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 444
+    Width = 55
+    Caption = 'LevelLabel'
+  end
+  object AngleLabel: TLabel
+    AnchorSideTop.Control = AngleBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 476
+    Width = 59
+    Caption = 'AngleLabel'
+  end
+  object FlowBox: TEdit
+    Left = 168
+    Height = 23
+    Top = 408
+    Width = 100
+    TabOrder = 9
+  end
+  object LevelBox: TEdit
+    Left = 168
+    Height = 23
+    Top = 440
+    Width = 100
+    TabOrder = 10
+  end
+  object AngleBox: TEdit
+    Left = 168
+    Height = 23
+    Top = 472
+    Width = 100
+    TabOrder = 11
+  end
+  object MemoOutput: TMemo
+    Left = 275
+    Height = 370
+    Top = 8
+    Width = 838
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    ReadOnly = True
+    ScrollBars = ssAutoVertical
+    TabOrder = 12
+  end
+  object HydrTable: TListView
+    Left = 275
+    Height = 111
+    Top = 384
+    Width = 838
+    Anchors = [akLeft, akRight, akBottom]
+    AutoWidthLastColumn = True
+    Columns = <    
+      item
+        Width = 90
+      end    
+      item
+        Width = 140
+      end    
+      item
+        Width = 150
+      end    
+      item
+        Width = 90
+      end    
+      item
+        Width = 110
+      end    
+      item
+        Width = 130
+      end    
+      item
+        Width = 124
+      end>
+    ReadOnly = True
+    RowSelect = True
+    TabOrder = 13
+    ViewStyle = vsReport
+  end
+  object MainMenu1: TMainMenu
+    Left = 296
+    Top = 504
+    object GuiMenu: TMenuItem
+      Caption = 'GuiMenu'
+    end
+    object OutMenu: TMenuItem
+      Caption = 'OutMenu'
+    end
+  end
+end
