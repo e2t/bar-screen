@@ -1,3 +1,5 @@
+This project has been moved to https://codeberg.org/e2t/bar-screen
+
 # BarScreen
 
 Додаток для розрахунку грабельних решіток.
